@@ -31,6 +31,9 @@
 
 #include "armsoc_exa.h"
 #include "armsoc_driver.h"
+#include "umplock/umplock_ioctl.h"
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 /* keep this here, instead of static-inline so submodule doesn't
  * need to know layout of ARMSOCRec.
@@ -324,6 +327,12 @@ static inline enum armsoc_gem_op idx2op(int index)
 _X_EXPORT Bool
 ARMSOCPrepareAccess(PixmapPtr pPixmap, int index)
 {
+	ScreenPtr pScreen = pPixmap->drawable.pScreen;
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
+	uint32_t dmabuf_name = 0;
+	_lock_item_s item;
+	int ret;
 	struct ARMSOCPixmapPrivRec *priv = exaGetPixmapDriverPrivate(pPixmap);
 
 	pPixmap->devPrivate.ptr = armsoc_bo_map(priv->bo);
@@ -344,13 +353,39 @@ ARMSOCPrepareAccess(PixmapPtr pPixmap, int index)
 		}
 	}
 
-	if (armsoc_bo_cpu_prep(priv->bo, idx2op(index))) {
-		xf86DrvMsg(-1, X_ERROR,
-			"%s: armsoc_bo_cpu_prep failed - unable to synchronise access.\n",
-			__func__);
-		return FALSE;
-	}
+	if (-1 != pARMSOC->lockFD) {
+		ret = armsoc_bo_get_name(priv->bo, &dmabuf_name);
 
+		if (ret) {
+			ERROR_MSG("could not get buffer name");
+			return FALSE;
+		}
+
+		item.secure_id = dmabuf_name;
+		item.usage = _LOCK_ACCESS_CPU_WRITE;
+
+		if (ioctl(pARMSOC->lockFD,  LOCK_IOCTL_CREATE, &item) < 0) {
+			ERROR_MSG("Unable to create lock item\n");
+			return FALSE;
+		}
+		if (ioctl(pARMSOC->lockFD, LOCK_IOCTL_PROCESS, &item) < 0) {
+			int max_retries = 5;
+			ERROR_MSG("Unable to process lock item with ID 0x%x - throttling\n", item.secure_id);
+			while ((ioctl(pARMSOC->lockFD, LOCK_IOCTL_PROCESS, &item) < 0) && max_retries) {
+				usleep(2000);
+				max_retries--;
+			}
+			if (max_retries == 0)
+				ERROR_MSG("Warning: Max retries == 0\n");
+		}
+	} else {
+		if (armsoc_bo_cpu_prep(priv->bo, idx2op(index))) {
+			xf86DrvMsg(-1, X_ERROR,
+				"%s: armsoc_bo_cpu_prep failed - unable to synchronise access.\n",
+				__func__);
+			return FALSE;
+		}
+	}
 	return TRUE;
 }
 
@@ -367,15 +402,32 @@ ARMSOCPrepareAccess(PixmapPtr pPixmap, int index)
 _X_EXPORT void
 ARMSOCFinishAccess(PixmapPtr pPixmap, int index)
 {
+	ScreenPtr pScreen = pPixmap->drawable.pScreen;
+	ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
 	struct ARMSOCPixmapPrivRec *priv = exaGetPixmapDriverPrivate(pPixmap);
+	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
+	if (-1 != pARMSOC->lockFD){
+		uint32_t dmabuf_name = 0;
+		_lock_item_s item;
+		int ret;
 
-	pPixmap->devPrivate.ptr = NULL;
-
-	/* NOTE: can we use EXA migration module to track which parts of the
-	 * buffer was accessed by sw, and pass that info down to kernel to
-	 * do a more precise cache flush..
-	 */
-	armsoc_bo_cpu_fini(priv->bo, idx2op(index));
+		pPixmap->devPrivate.ptr = NULL;
+		ret = armsoc_bo_get_name(priv->bo, &dmabuf_name);
+		if (ret) {
+			ERROR_MSG("could not get buffer name");
+			return ;
+		}
+		item.secure_id = dmabuf_name;
+		item.usage = _LOCK_ACCESS_CPU_WRITE;
+		ioctl(pARMSOC->lockFD, LOCK_IOCTL_RELEASE, &item);
+	}else{
+		/* NOTE: can we use EXA migration module to track which parts of the
+		 * buffer was accessed by sw, and pass that info down to kernel to
+		 * do a more precise cache flush..
+		 */
+		pPixmap->devPrivate.ptr = NULL;
+		armsoc_bo_cpu_fini(priv->bo, idx2op(index));
+	}
 }
 
 /**

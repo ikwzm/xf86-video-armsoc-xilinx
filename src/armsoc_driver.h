@@ -151,6 +151,10 @@ struct ARMSOCRec {
 	/* Identify which CRTC to use. -1 uses all CRTCs */
 	int					crtcNum;
 
+	Bool				useUmplock;
+	/* File descriptor of the umplock*/
+	int					lockFD;
+
 	/* The Swap Chain stores the pending swap operations */
 	struct ARMSOCDRISwapCmd            **swap_chain;
 

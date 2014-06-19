@@ -64,6 +64,11 @@ an error will be logged, and the -background none functionality will be
 disabled.
 .IP
 Default: NULL
+.TP
+.BI "Option \*qUMP_LOCK\*q \*q" boolean \*q
+Use the umplock module for cross-process access synchronization. It should be only enabled for Mali400
+.IP
+Default: Umplock is Disabled
 
 .SH DRM DEVICE SELECTION
 
