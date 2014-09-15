@@ -688,7 +688,8 @@ ARMSOCDRI2SwapComplete(struct ARMSOCDRISwapCmd *cmd)
 		pARMSOC->pending_flips--;
 		/* Free the swap cmd and remove it from the swap chain. */
 		idx = cmd->swap_id % pARMSOC->swap_chain_size;
-		assert(pARMSOC->swap_chain[idx] == cmd);
+		if (pARMSOC->swap_chain[idx] != cmd)
+			WARNING_MSG("Flip isn't in order\n");
 		pARMSOC->swap_chain[idx] = NULL;
 	}
 	free(cmd);
@@ -816,7 +817,8 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 		/* Add swap operation to the swap chain */
 		cmd->swap_id = pARMSOC->swap_chain_count++;
 		idx = cmd->swap_id % pARMSOC->swap_chain_size;
-		assert(NULL == pARMSOC->swap_chain[idx]);
+		if (NULL != pARMSOC->swap_chain[idx])
+			WARNING_MSG("Flip is called too fast\n");
 		pARMSOC->swap_chain[idx] = cmd;
 		/* TODO: MIDEGL-1461: Handle rollback if multiple CRTC flip is
 		 * only partially successful
