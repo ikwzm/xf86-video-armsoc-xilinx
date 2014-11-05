@@ -24,7 +24,7 @@
 
 AC_PREREQ(2.60)
 AC_INIT([xf86-video-armsoc],
-        [1.0.0],
+        [1.1.0],
         [],
         [xf86-video-armsoc])
 AC_CONFIG_SRCDIR([Makefile.am])
