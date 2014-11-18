@@ -417,7 +417,7 @@ cleanup:
 	if (output_ids)
 		free(output_ids);
 
-	if (!ret && !drmmode_crtc->last_good_mode) {
+	if (!ret && drmmode_crtc->last_good_mode) {
 		/* If there was a problem, restore the last good mode: */
 		crtc->x = drmmode_crtc->last_good_x;
 		crtc->y = drmmode_crtc->last_good_y;
@@ -965,6 +965,8 @@ drmmode_output_get_modes(xf86OutputPtr output)
 				drmmode_output->edid_blob->data);
 
 	if (ddc_mon) {
+		if (drmmode_output->edid_blob->length > 128)
+			ddc_mon->flags |= MONITOR_EDID_COMPLETE_RAWDATA;
 		xf86OutputSetEDID(output, ddc_mon);
 		xf86SetDDCproperties(pScrn, ddc_mon);
 	}

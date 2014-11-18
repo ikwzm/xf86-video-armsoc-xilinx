@@ -88,9 +88,8 @@ struct ARMSOCDRI2BufferRec {
 	 * overhead most of the time apart from when we switch from flipping
 	 * to blitting or vice versa.
 	 *
-	 * We should bump the serial number of the drawable if canflip() returns
-	 * something different to what is stored here, so that the DRI2 buffers
-	 * will get re-allocated.
+	 * If canflip() returns something different to what is stored here,
+	 * the DRI2 buffers should be re-allocated.
 	 */
 	int previous_canflip;
 
@@ -175,38 +174,17 @@ canexchange(DrawablePtr pDraw, struct armsoc_bo *src_bo, struct armsoc_bo *dst_b
 	return ret;
 }
 
-/**
- * Create Buffer.
- *
- * Note that 'format' is used from the client side to specify the DRI buffer
- * format, which could differ from the drawable format.  For example, the
- * drawable could be 32b RGB, but the DRI buffer some YUV format (video) or
- * perhaps lower bit depth RGB (GL).  The color conversion is handled when
- * blitting to front buffer, and page-flipping (overlay or flipchain) can
- * only be used if the display supports.
- */
-static DRI2BufferPtr
-ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
-		unsigned int format)
+static Bool create_buffer(DrawablePtr pDraw, struct ARMSOCDRI2BufferRec *buf)
 {
 	ScreenPtr pScreen = pDraw->pScreen;
 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-	struct ARMSOCDRI2BufferRec *buf;
 	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
+	DRI2BufferPtr buffer = DRIBUF(buf);
 	PixmapPtr pPixmap = NULL;
 	struct armsoc_bo *bo;
 	int ret;
 
-	DEBUG_MSG("pDraw=%p, attachment=%d, format=%08x",
-			pDraw, attachment, format);
-
-	buf = calloc(1, sizeof *buf);
-	if (!buf) {
-		ERROR_MSG("Couldn't allocate internal buffer structure");
-		return NULL;
-	}
-
-	if (attachment == DRI2BufferFrontLeft) {
+	if (buffer->attachment == DRI2BufferFrontLeft) {
 		pPixmap = draw2pix(pDraw);
 		pPixmap->refcnt++;
 	} else {
@@ -214,12 +192,12 @@ ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
 	}
 
 	if (!pPixmap) {
-		assert(attachment != DRI2BufferFrontLeft);
+		assert(buffer->attachment != DRI2BufferFrontLeft);
 		ERROR_MSG("Failed to create back buffer for window");
 		goto fail;
 	}
 
-	if (attachment == DRI2BufferBackLeft && pARMSOC->driNumBufs > 2) {
+	if (buffer->attachment == DRI2BufferBackLeft && pARMSOC->driNumBufs > 2) {
 		buf->pPixmaps = calloc(pARMSOC->driNumBufs-1,
 				sizeof(PixmapPtr));
 		buf->numPixmaps = pARMSOC->driNumBufs-1;
@@ -243,10 +221,8 @@ ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
 		goto fail;
 	}
 
-	DRIBUF(buf)->attachment = attachment;
 	DRIBUF(buf)->pitch = exaGetPixmapPitch(pPixmap);
 	DRIBUF(buf)->cpp = pPixmap->drawable.bitsPerPixel / 8;
-	DRIBUF(buf)->format = format;
 	DRIBUF(buf)->flags = 0;
 	buf->refcnt = 1;
 	buf->previous_canflip = canflip(pDraw);
@@ -257,7 +233,7 @@ ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
 		goto fail;
 	}
 
-	if (canflip(pDraw) && attachment != DRI2BufferFrontLeft) {
+	if (canflip(pDraw) && buffer->attachment != DRI2BufferFrontLeft) {
 		/* Create an fb around this buffer. This will fail and we will
 		 * fall back to blitting if the display controller hardware
 		 * cannot scan out this buffer (for example, if it doesn't
@@ -281,40 +257,29 @@ ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
 	 * so needs synchronised access */
 	ARMSOCRegisterExternalAccess(pPixmap);
 
-	return DRIBUF(buf);
+	return TRUE;
 
 fail:
 	if (pPixmap != NULL) {
-		if (attachment != DRI2BufferFrontLeft)
+		if (buffer->attachment != DRI2BufferFrontLeft)
 			pScreen->DestroyPixmap(pPixmap);
 		else
 			pPixmap->refcnt--;
 	}
-	free(buf->pPixmaps);
-	free(buf);
 
-	return NULL;
+	return FALSE;
 }
 
-/**
- * Destroy Buffer
- */
-static void
-ARMSOCDRI2DestroyBuffer(DrawablePtr pDraw, DRI2BufferPtr buffer)
+static Bool destroy_buffer(DrawablePtr pDraw, struct ARMSOCDRI2BufferRec *buf)
 {
-	struct ARMSOCDRI2BufferRec *buf = ARMSOCBUF(buffer);
-	/* Note: pDraw may already be deleted, so use the pPixmap here
-	 * instead (since it is at least refcntd)
-	 */
 	ScreenPtr pScreen = buf->pPixmaps[0]->drawable.pScreen;
 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
 	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
+	DRI2BufferPtr buffer = DRIBUF(buf);
 	int numBuffers, i;
 
 	if (--buf->refcnt > 0)
-		return;
-
-	DEBUG_MSG("pDraw=%p, DRIbuffer=%p", pDraw, buffer);
+		return FALSE;
 
 	if (buffer->attachment == DRI2BufferBackLeft) {
 		assert(pARMSOC->driNumBufs > 1);
@@ -327,8 +292,74 @@ ARMSOCDRI2DestroyBuffer(DrawablePtr pDraw, DRI2BufferPtr buffer)
 		pScreen->DestroyPixmap(buf->pPixmaps[i]);
 	}
 
-	free(buf->pPixmaps);
-	free(buf);
+	return TRUE;
+}
+
+/**
+ * Create Buffer.
+ *
+ * Note that 'format' is used from the client side to specify the DRI buffer
+ * format, which could differ from the drawable format.  For example, the
+ * drawable could be 32b RGB, but the DRI buffer some YUV format (video) or
+ * perhaps lower bit depth RGB (GL).  The color conversion is handled when
+ * blitting to front buffer, and page-flipping (overlay or flipchain) can
+ * only be used if the display supports.
+ */
+static DRI2BufferPtr
+ARMSOCDRI2CreateBuffer(DrawablePtr pDraw, unsigned int attachment,
+		unsigned int format)
+{
+	ScreenPtr pScreen = pDraw->pScreen;
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+	struct ARMSOCDRI2BufferRec *buf;
+
+	DEBUG_MSG("pDraw=%p, attachment=%d, format=%08x",
+			pDraw, attachment, format);
+
+	buf = calloc(1, sizeof *buf);
+	if (!buf) {
+		ERROR_MSG("Couldn't allocate internal buffer structure");
+		return NULL;
+	}
+
+	DRIBUF(buf)->attachment = attachment;
+	DRIBUF(buf)->format = format;
+
+	if (!create_buffer(pDraw, buf)) {
+		free(buf);
+		return NULL;
+	}
+
+	return DRIBUF(buf);
+}
+
+/**
+ * Destroy Buffer
+ */
+static void
+ARMSOCDRI2DestroyBuffer(DrawablePtr pDraw, DRI2BufferPtr buffer)
+{
+	struct ARMSOCDRI2BufferRec *buf = ARMSOCBUF(buffer);
+	ScreenPtr pScreen;
+	ScrnInfoPtr pScrn;
+	/* Note: pDraw may already be deleted, so use the pPixmap here
+	 * instead (since it is at least refcntd)
+	 */
+	if (NULL == buf->pPixmaps || NULL == buf->pPixmaps[0]) {
+		if (--buf->refcnt == 0)
+			free(buf);
+		return;
+	}
+
+	pScreen = buf->pPixmaps[0]->drawable.pScreen;
+	pScrn = xf86ScreenToScrn(pScreen);
+
+	DEBUG_MSG("pDraw=%p, DRIbuffer=%p", pDraw, buffer);
+
+	if (destroy_buffer(pDraw, buf)) {
+		free(buf->pPixmaps);
+		free(buf);
+	}
 }
 
 static void
@@ -498,10 +529,8 @@ static Bool allocNextBuffer(DrawablePtr pDraw, PixmapPtr *ppPixmap,
 		goto error;
 	}
 
-	if (!armsoc_bo_get_fb(bo)) {
+	if (canflip(pDraw) && !armsoc_bo_get_fb(bo)) {
 		ret = armsoc_bo_add_fb(bo);
-		/* Should always be able to add fb, as we only add more buffers
-		 * when flipping*/
 		if (ret) {
 			ERROR_MSG(
 				"Could not add framebuffer to additional back buffer");
@@ -718,13 +747,23 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
 	struct ARMSOCDRI2BufferRec *src = ARMSOCBUF(pSrcBuffer);
 	struct ARMSOCDRI2BufferRec *dst = ARMSOCBUF(pDstBuffer);
+#if DRI2INFOREC_VERSION < 6
+	int new_canflip;
+#endif
 	struct ARMSOCDRISwapCmd *cmd;
 	struct armsoc_bo *src_bo, *dst_bo;
 	int src_fb_id, dst_fb_id;
-	int new_canflip, ret, do_flip;
+	int ret, do_flip;
 	unsigned int idx;
 	RegionRec region;
-	PixmapPtr pDstPixmap = draw2pix(dri2draw(pDraw, pDstBuffer));
+	PixmapPtr pDstPixmap = NULL;
+
+	if (NULL == src->pPixmaps || NULL == src->pPixmaps[src->currentPixmap]
+	    || NULL == dst->pPixmaps || NULL == dst->pPixmaps[dst->currentPixmap]) {
+		return FALSE;
+	}
+
+	pDstPixmap = draw2pix(dri2draw(pDraw, pDstBuffer));
 
 	cmd = calloc(1, sizeof(*cmd));
 	if (!cmd)
@@ -773,6 +812,7 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 	DEBUG_MSG("SWAP %d SCHEDULED : %d -> %d ", cmd->swap_id,
 				pSrcBuffer->attachment, pDstBuffer->attachment);
 
+#if DRI2INFOREC_VERSION < 6
 	new_canflip = canflip(pDraw);
 	if ((src->previous_canflip != new_canflip) ||
 	    (dst->previous_canflip != new_canflip)) {
@@ -792,6 +832,7 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 
 	src->previous_canflip = new_canflip;
 	dst->previous_canflip = new_canflip;
+#endif
 
 	do_flip = src_fb_id && dst_fb_id && canflip(pDraw);
 
@@ -920,6 +961,54 @@ ARMSOCDRI2ScheduleWaitMSC(ClientPtr client, DrawablePtr pDraw,
 	ERROR_MSG("not implemented");
 	return FALSE;
 }
+#if DRI2INFOREC_VERSION >= 6
+/**
+ * Called by DRI2 to reuse a buffer which is created earlier.
+ */
+static void
+ARMSOCDRI2ReuseBufferNotify(DrawablePtr pDraw, DRI2BufferPtr buffer)
+{
+	int new_canflip, ret, fb_id;
+	struct armsoc_bo *bo;
+	struct ARMSOCDRI2BufferRec *buf = ARMSOCBUF(buffer);
+	ScreenPtr pScreen = pDraw->pScreen;
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+
+	if (DRI2BufferBackLeft != buffer->attachment) {
+		return;
+	}
+
+	new_canflip = canflip(pDraw);
+	if (buf->previous_canflip == new_canflip) {
+		return;
+	}
+
+	if (destroy_buffer(pDraw, buf)) {
+		free(buf->pPixmaps);
+		buf->pPixmaps = NULL;
+		if (!create_buffer(pDraw, buf)) {
+			ERROR_MSG("Failed to create buffer");
+		}
+	} else {
+		bo = boFromBuffer(buffer);
+		fb_id = armsoc_bo_get_fb(bo);
+		if (buf->previous_canflip == FALSE && new_canflip == TRUE && fb_id == 0) {
+			ret = armsoc_bo_add_fb(bo);
+			if (ret) {
+				WARNING_MSG("Falling back to blitting a flippable window");
+			}
+			buf->previous_canflip = new_canflip;
+		} else if (buf->previous_canflip == TRUE && new_canflip == FALSE && fb_id) {
+			ret = armsoc_bo_rm_fb(bo);
+			if (ret) {
+				ERROR_MSG("Could not remove fb for a flippable to non-flippable window");
+			}
+			buf->previous_canflip = new_canflip;
+		}
+	}
+}
+#endif
+
 
 /**
  * The DRI2 ScreenInit() function.. register our handler fxns w/ DRI2 core
@@ -946,6 +1035,7 @@ ARMSOCDRI2ScreenInit(ScreenPtr pScreen)
 		.GetMSC            = ARMSOCDRI2GetMSC,
 		.AuthMagic         = drmAuthMagic,
 #if DRI2INFOREC_VERSION >= 6
+		.ReuseBufferNotify = ARMSOCDRI2ReuseBufferNotify,
 		.SwapLimitValidate = ARMSOCDRI2SwapLimitValidate,
 #endif
 	};
