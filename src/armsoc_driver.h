@@ -224,6 +224,7 @@ Bool ARMSOCDRI2ScreenInit(ScreenPtr pScreen);
 void ARMSOCDRI2CloseScreen(ScreenPtr pScreen);
 void ARMSOCDRI2SwapComplete(struct ARMSOCDRISwapCmd *cmd);
 void ARMSOCDRI2ResizeSwapChain(ScrnInfoPtr pScrn, struct armsoc_bo *old_bo, struct armsoc_bo *resized_bo);
+void ARMSOCDRI2VBlankHandler(unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec, void *user_data);
 
 /**
  * DRI2 util functions..
