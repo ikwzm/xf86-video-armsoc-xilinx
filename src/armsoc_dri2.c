@@ -253,6 +253,8 @@ static Bool create_buffer(DrawablePtr pDraw, struct ARMSOCDRI2BufferRec *buf)
 #endif /* DRI2INFOREC_VERSION >= 6 */
 	}
 
+	DRI2_BUFFER_SET_FB(DRIBUF(buf)->flags, armsoc_bo_get_fb(bo) > 0 ? 1 : 0);
+	DRI2_BUFFER_SET_REUSED(DRIBUF(buf)->flags, 0);
 	/* Register Pixmap as having a buffer that can be accessed externally,
 	 * so needs synchronised access */
 	ARMSOCRegisterExternalAccess(pPixmap);
@@ -1027,6 +1029,7 @@ ARMSOCDRI2ReuseBufferNotify(DrawablePtr pDraw, DRI2BufferPtr buffer)
 	ScreenPtr pScreen = pDraw->pScreen;
 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
 
+	DRI2_BUFFER_SET_REUSED(buffer->flags, 1);
 	if (DRI2BufferBackLeft != buffer->attachment) {
 		return;
 	}
@@ -1049,12 +1052,16 @@ ARMSOCDRI2ReuseBufferNotify(DrawablePtr pDraw, DRI2BufferPtr buffer)
 			ret = armsoc_bo_add_fb(bo);
 			if (ret) {
 				WARNING_MSG("Falling back to blitting a flippable window");
+			} else {
+				DRI2_BUFFER_SET_FB(buffer->flags, 1);
 			}
 			buf->previous_canflip = new_canflip;
 		} else if (buf->previous_canflip == TRUE && new_canflip == FALSE && fb_id) {
 			ret = armsoc_bo_rm_fb(bo);
 			if (ret) {
 				ERROR_MSG("Could not remove fb for a flippable to non-flippable window");
+			} else {
+				DRI2_BUFFER_SET_FB(buffer->flags, 0);
 			}
 			buf->previous_canflip = new_canflip;
 		}
