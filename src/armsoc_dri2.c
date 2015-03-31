@@ -787,13 +787,6 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 	cmd->func = func;
 	cmd->data = data;
 
-	region.extents.x1 = region.extents.y1 = 0;
-	region.extents.x2 = pDstPixmap->drawable.width;
-	region.extents.y2 = pDstPixmap->drawable.height;
-	region.data = NULL;
-	DamageRegionAppend(&pDstPixmap->drawable, &region);
-	DamageRegionProcessPending(&pDstPixmap->drawable);
-
 	/* obtain extra ref on DRI buffers to avoid them going
 	 * away while we await the page flip event.
 	 */
@@ -929,6 +922,13 @@ ARMSOCDRI2ScheduleSwap(ClientPtr client, DrawablePtr pDraw,
 		exchangebufs(pDraw, pSrcBuffer, pDstBuffer);
 		if (pSrcBuffer->attachment == DRI2BufferBackLeft)
 			nextBuffer(pDraw, ARMSOCBUF(pSrcBuffer));
+
+		region.extents.x1 = region.extents.y1 = 0;
+		region.extents.x2 = pDstPixmap->drawable.width;
+		region.extents.y2 = pDstPixmap->drawable.height;
+		region.data = NULL;
+		DamageRegionAppend(&pDstPixmap->drawable, &region);
+		DamageRegionProcessPending(&pDstPixmap->drawable);
 
 		cmd->type = DRI2_EXCHANGE_COMPLETE;
 		ARMSOCDRI2SwapComplete(cmd);
