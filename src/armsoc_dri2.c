@@ -247,8 +247,8 @@ static Bool create_buffer(DrawablePtr pDraw, struct ARMSOCDRI2BufferRec *buf)
 #if DRI2INFOREC_VERSION >= 6
 		else if (FALSE == DRI2SwapLimit(pDraw, pARMSOC->swap_chain_size)) {
 			WARNING_MSG(
-				"Failed to set DRI2SwapLimit(%x,%d)",
-				(unsigned int)pDraw, pARMSOC->swap_chain_size);
+				"Failed to set DRI2SwapLimit(%p,%d)",
+				pDraw, pARMSOC->swap_chain_size);
 		}
 #endif /* DRI2INFOREC_VERSION >= 6 */
 	}
