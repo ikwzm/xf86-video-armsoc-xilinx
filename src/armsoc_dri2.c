@@ -1034,8 +1034,12 @@ ARMSOCDRI2ReuseBufferNotify(DrawablePtr pDraw, DRI2BufferPtr buffer)
 		return;
 	}
 
+	bo = boFromBuffer(buffer);
+
 	new_canflip = canflip(pDraw);
-	if (buf->previous_canflip == new_canflip) {
+	if (buf->previous_canflip == new_canflip &&
+				armsoc_bo_width(bo) == pDraw->width &&
+				armsoc_bo_height(bo) == pDraw->height) {
 		return;
 	}
 
@@ -1046,7 +1050,6 @@ ARMSOCDRI2ReuseBufferNotify(DrawablePtr pDraw, DRI2BufferPtr buffer)
 			ERROR_MSG("Failed to create buffer");
 		}
 	} else {
-		bo = boFromBuffer(buffer);
 		fb_id = armsoc_bo_get_fb(bo);
 		if (buf->previous_canflip == FALSE && new_canflip == TRUE && fb_id == 0) {
 			ret = armsoc_bo_add_fb(bo);
