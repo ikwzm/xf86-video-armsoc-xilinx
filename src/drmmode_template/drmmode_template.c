@@ -53,6 +53,7 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 }
 
 struct drmmode_interface template_interface = {
+	"template"	      /* name of drm driver*/
 	1                     /* use_page_flip_events */,
 	1                     /* use_early_display */,
 	CURSORW               /* cursor width */,
@@ -63,9 +64,3 @@ struct drmmode_interface template_interface = {
 	0                     /* vblank_query_supported */,
 	create_custom_gem     /* create_custom_gem */,
 };
-
-struct drmmode_interface *drmmode_interface_get_implementation(int drm_fd)
-{
-	return &template_interface;
-}
-
