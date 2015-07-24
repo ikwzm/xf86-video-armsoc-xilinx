@@ -32,6 +32,10 @@
 #include "config.h"
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "xf86DDC.h"
 #include "xf86RandR12.h"
 
