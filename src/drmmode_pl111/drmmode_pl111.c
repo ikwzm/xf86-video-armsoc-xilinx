@@ -106,7 +106,7 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 }
 
 struct drmmode_interface pl111_interface = {
-	"pl111"		      /* name of drm driver */,
+	"pl111_drm"	      /* name of drm driver */,
 	1                     /* use_page_flip_events */,
 	1                     /* use_early_display */,
 	CURSORW               /* cursor width */,
