@@ -736,6 +736,7 @@ static struct drmmode_interface *get_drmmode_implementation(int drm_fd)
 		&exynos_interface,
 		&pl111_interface,
 		&kirin_interface,
+		&sti_interface,
 	};
 	int i;
 
