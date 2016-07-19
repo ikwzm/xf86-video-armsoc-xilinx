@@ -410,9 +410,11 @@ done_setting:
 		drmmode_output_dpms(output, DPMSModeOn);
 	}
 
+#if !RELOAD_CURSORS_DEPRECATED
 	/* if hw cursor is initialized, reload it */
 	if (drmmode->cursor)
 		xf86_reload_cursors(pScrn->pScreen);
+#endif
 
 cleanup:
 	if (newcrtc)
@@ -1889,6 +1891,13 @@ drmmode_uevent_fini(ScrnInfoPtr pScrn)
 	TRACE_EXIT();
 }
 
+#if HAVE_NOTIFY_FD
+static void
+drmmode_notify_fd(int fd, int notify, void *data)
+{
+	drmHandleEvent(fd, &event_context);
+}
+#else
 static void
 drmmode_wakeup_handler(pointer data, int err, pointer p)
 {
@@ -1902,19 +1911,28 @@ drmmode_wakeup_handler(pointer data, int err, pointer p)
 	if (FD_ISSET(fd, read_mask))
 		drmHandleEvent(fd, &event_context);
 }
+#endif
 
 void drmmode_init_wakeup_handler(struct ARMSOCRec *pARMSOC)
 {
+#if HAVE_NOTIFY_FD
+	SetNotifyFd(pARMSOC->drmFD, drmmode_notify_fd, X_NOTIFY_READ, pARMSOC);
+#else
 	AddGeneralSocket(pARMSOC->drmFD);
 	RegisterBlockAndWakeupHandlers((BlockHandlerProcPtr)NoopDDA,
 			drmmode_wakeup_handler, pARMSOC);
+#endif
 }
 
 void drmmode_fini_wakeup_handler(struct ARMSOCRec *pARMSOC)
 {
+#if HAVE_NOTIFY_FD
+	RemoveNotifyFd(pARMSOC->drmFD);
+#else
 	RemoveBlockAndWakeupHandlers((BlockHandlerProcPtr)NoopDDA,
 			drmmode_wakeup_handler, pARMSOC);
 	RemoveGeneralSocket(pARMSOC->drmFD);
+#endif
 }
 
 void
