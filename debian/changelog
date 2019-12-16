@@ -1,0 +1,7 @@
+xf86-video-armsoc-xilinx (1.4-1) unstable; urgency=low
+
+  * base from git://anongit.freedesktop.org/git/xorg/driver/xf86-video-armsoc.git(1.4-1)
+  * add drmmode_xilinx
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Mon, 16 Dec 2019 16:40:18 +0900
+

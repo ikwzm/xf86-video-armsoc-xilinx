@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+DH_VERBOSE=1
+
+override_dh_auto_configure:
+	dh_auto_configure -- --libdir=\$${prefix}/lib
+
+# Install in debian/tmp to retain control through dh_install:
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/tmp
+
+# Kill *.la files, and forget no-one:
+override_dh_install:
+	find debian/tmp -name '*.la' -delete
+	dh_install --fail-missing
+
+%:
+	dh $@ --with quilt,autoreconf,xsf --builddirectory=build/
