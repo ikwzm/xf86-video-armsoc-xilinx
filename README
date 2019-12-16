@@ -1,5 +1,48 @@
 xf86-video-armsoc-xilinx
+========================
 Open-source X.org graphics driver for ARM graphics(with Zynq UltraScale+ MPSoC)
+
+Original: https://anongit.freedesktop.org/git/xorg/driver/xf86-video-armsoc.git
+
+Build Debian Package
+--------------------
+
+```console
+shell$ apt install libdrm-dev libudev-dev libxext-dev pkg-config x11proto-core-dev x11proto-fonts-dev x11proto-gl-dev x11proto-xf86dri-dev xutils-dev xserver-xorg-dev quilt dh-autoreconf debhelper
+shell$ sudo debian/rules binary
+```
+
+```console
+shell$ cd ..
+shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.4-1_arm64.deb 
+ new Debian package, version 2.0.
+ size 32924 bytes: control archive=856 bytes.
+     540 bytes,    12 lines      control              
+     611 bytes,     7 lines      md5sums              
+ Package: xserver-xorg-video-armsoc-xilinx
+ Source: xf86-video-armsoc-xilinx
+ Version: 1.4-1
+ Architecture: arm64
+ Maintainer: ikwzm <ichiro_k@ca2.so-net.ne.jp>
+ Installed-Size: 100
+ Depends: libc6 (>= 2.17), libdrm2 (>= 2.4.36), libpixman-1-0, xorg-video-abi-24, xserver-xorg-core (>= 2:1.18.99.901)
+ Provides: xorg-driver-video
+ Section: x11
+ Priority: optional
+ Homepage: <https://github.com/ikwzm/xf86-video-armsoc-xilinx>
+ Description: X.Org X Server -- ARM SoC display driver for rockchip, amlogic, sunxi and Xilinx(ZynqMP) DRM (mainline kernel)
+```
+Install Debian Package
+----------------------
+
+```console
+shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.4-1_arm64.deb 
+(Reading database ... 63768 files and directories currently installed.)
+Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.4-1_arm64.deb ...
+Unpacking xserver-xorg-video-armsoc-xilinx (1.4-1) over (1.4-1) ...
+Setting up xserver-xorg-video-armsoc-xilinx (1.4-1) ...
+Processing triggers for man-db (2.8.5-2) ...
+```
 
 DRM driver selection
 --------------------
