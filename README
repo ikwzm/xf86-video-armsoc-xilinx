@@ -1,5 +1,5 @@
-xf86-video-armsoc
-Open-source X.org graphics driver for ARM graphics
+xf86-video-armsoc-xilinx
+Open-source X.org graphics driver for ARM graphics(with Zynq UltraScale+ MPSoC)
 
 DRM driver selection
 --------------------
@@ -13,6 +13,7 @@ The currently supported DRM drivers are:
 - exynos
 - kirin
 - sti
+- xilinx
 
 For other drivers, you will need to implement this support yourself. A template implementation is
 provided in src/drmmode_template.
