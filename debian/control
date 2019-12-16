@@ -1,7 +1,8 @@
 Source: xf86-video-armsoc-xilinx
 Section: x11
 Priority: optional
-Maintainer: Ichiro Kawazome <ichiro_k@ca2.so-net.ne.jp>
+Homepage: <https://github.com/ikwzm/xf86-video-armsoc-xilinx>
+Maintainer: ikwzm <ichiro_k@ca2.so-net.ne.jp>
 Standards-Version: 3.9.6
 Build-Depends: debhelper (>= 9),
                libdrm-dev (>= 2.2),
@@ -15,7 +16,7 @@ Build-Depends: debhelper (>= 9),
                xutils-dev,
                xserver-xorg-dev (>= 2:1.9.4),
                quilt,
-               dpkg-dev
+               dh-autoreconf
 
 Package: xserver-xorg-video-armsoc-xilinx
 Architecture: armhf arm64
@@ -24,3 +25,4 @@ Depends: ${shlibs:Depends},
          ${xviddriver:Depends}
 Provides: ${xviddriver:Provides}
 Description: X.Org X Server -- ARM SoC display driver for rockchip, amlogic, sunxi and Xilinx(ZynqMP) DRM (mainline kernel)
+
