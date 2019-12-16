@@ -43,7 +43,8 @@ armsoc_drv_ladir = @moduledir@/drivers
 DRMMODE_SRCS = drmmode_exynos/drmmode_exynos.c \
 	drmmode_pl111/drmmode_pl111.c \
 	drmmode_kirin/drmmode_kirin.c \
-	drmmode_sti/drmmode_sti.c
+	drmmode_sti/drmmode_sti.c \
+	drmmode_xilinx/drmmode_xilinx.c
 
 
 armsoc_drv_la_SOURCES = \
