@@ -1,0 +1,41 @@
+#!/usr/bin/make -f
+
+package         = xserver-xorg-video-armsoc-xilinx
+arch           ?= $(shell uname -m | sed -e s/arm.*/arm/ -e s/aarch64.*/arm64/)
+deb_arch       ?= $(shell dpkg --print-architecture)
+currdir        ?= $(shell pwd)
+workdir        ?= $(currdir)/debian/tmp
+prefix         ?= usr
+docdir         ?= $(prefix)/share/doc/$(package)
+srcdir         ?= $(currdir)/src
+srclibdir      ?= $(srcdir)/.libs
+distdir        ?= $(currdir)
+
+clean:
+	rm -f build
+	-$(MAKE) clean
+	rm -rf $(workdir)
+
+build:
+	./configure --prefix=$(workdir)/$(prefix)
+	$(MAKE) all
+	touch build
+
+binary-indep: build
+
+binary-arch: build
+	rm -rf debian/tmp
+	install -d $(workdir)/DEBIAN $(workdir)/$(docdir)
+	$(MAKE) install 
+	find $(workdir)/DEBIAN -name '*.la' -delete
+	cp -a debian/copyright       $(workdir)/$(docdir)
+	cp -a debian/changelog       $(workdir)/$(docdir)/changelog.Debian
+	cp -a ChangeLog              $(workdir)/$(docdir)/changelog
+	cd $(workdir)/$(docdir) && gzip -9 changelog changelog.Debian
+	dpkg-gencontrol -DArchitecture=$(deb_arch)
+	chown -R root:root $(workdir)
+	chmod -$ u+w,go=rX $(workdir)
+	dpkg-deb --build   $(workdir) $(distdir)
+
+binary: binary-indep binary-arch
+
