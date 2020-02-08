@@ -9,10 +9,6 @@ Build-Depends: debhelper (>= 9),
                libudev-dev,
                libxext-dev,
                pkg-config,
-               x11proto-core-dev,
-               x11proto-fonts-dev,
-               x11proto-gl-dev,
-               x11proto-xf86dri-dev,
                xutils-dev,
                xserver-xorg-dev (>= 2:1.9.4),
                quilt,
@@ -22,7 +18,7 @@ Package: xserver-xorg-video-armsoc-xilinx
 Architecture: armhf arm64
 Depends: ${shlibs:Depends},
          ${misc:Depends},
-         ${xviddriver:Depends}
+         xserver-xorg-core
 Provides: ${xviddriver:Provides}
 Description: X.Org X Server -- ARM SoC display driver for rockchip, amlogic, sunxi and Xilinx(ZynqMP) DRM (mainline kernel)
 
