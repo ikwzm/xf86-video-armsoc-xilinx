@@ -10,7 +10,7 @@ Build Debian Package
 ### Install packages required for build
 
 ```console
-shell$ apt install libdrm-dev libudev-dev libxext-dev pkg-config x11proto-core-dev x11proto-fonts-dev x11proto-gl-dev x11proto-xf86dri-dev xutils-dev xserver-xorg-dev quilt dh-autoreconf debhelper
+shell$ apt install libdrm-dev libudev-dev libxext-dev pkg-config x11proto-core-dev x11proto-fonts-dev x11proto-gl-dev x11proto-xf86dri-dev xutils-dev xserver-xorg-dev quilt dh-autoreconf dh-exec debhelper 
 ```
 
 ### Generate configure and Makefile

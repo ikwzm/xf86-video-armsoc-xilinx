@@ -81,7 +81,7 @@ static void ARMSOCFreeScreen(FREE_SCREEN_ARGS_DECL);
  * before it calls the Probe() function.  The name of this structure must be
  * the all-upper-case version of the driver name.
  */
-_X_EXPORT DriverRec ARMSOC = {
+_X_EXPORT DriverRec XLNX = {
 		ARMSOC_VERSION,
 		(char *)ARMSOC_DRIVER_NAME,
 		ARMSOCIdentify,
@@ -502,7 +502,7 @@ static XF86ModuleVersionInfo ARMSOCVersRec = {
 };
 
 /** Let the XFree86 code know about the VersRec and Setup() function. */
-_X_EXPORT XF86ModuleData armsocModuleData = { &ARMSOCVersRec, ARMSOCSetup, NULL };
+_X_EXPORT XF86ModuleData xlnxModuleData = { &ARMSOCVersRec, ARMSOCSetup, NULL };
 
 
 /**
@@ -516,7 +516,7 @@ ARMSOCSetup(pointer module, pointer opts, int *errmaj, int *errmin)
 	/* This module should be loaded only once, but check to be sure: */
 	if (!setupDone) {
 		setupDone = TRUE;
-		xf86AddDriver(&ARMSOC, module, 0);
+		xf86AddDriver(&XLNX, module, 0);
 
 		/* The return value must be non-NULL on success even
 		 * though there is no TearDownProc.
@@ -733,10 +733,10 @@ static struct drmmode_interface *get_drmmode_implementation(int drm_fd)
 	drmVersionPtr version;
 	struct drmmode_interface *ret = NULL;
 	struct drmmode_interface *ifaces[] = {
-		&exynos_interface,
-		&pl111_interface,
-		&kirin_interface,
-		&sti_interface,
+        /*	&exynos_interface, */
+        /*	&pl111_interface,  */
+        /*	&kirin_interface,  */
+        /*	&sti_interface,    */
 		&xilinx_interface,
 	};
 	int i;

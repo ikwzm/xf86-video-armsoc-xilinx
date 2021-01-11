@@ -1,0 +1,4 @@
+#! /usr/bin/dh-exec
+usr/lib/xorg/modules/drivers/armsoc_drv.so => usr/lib/xorg/modules/drivers/xlnx_drv.so => 
+usr/share/man/man4/armsoc.4 => usr/share/man/man4/armsoc_xlnx.4
+
