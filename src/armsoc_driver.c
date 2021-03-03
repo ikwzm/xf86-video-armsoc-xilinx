@@ -1259,7 +1259,8 @@ ARMSOCCloseScreen(CLOSE_SCREEN_ARGS_DECL)
 	 * we do it here, before calling the CloseScreen chain which would just free pScreen->devPrivate in fbCloseScreen()
 	 */
 	if (pScreen->devPrivate) {
-		(void) (*pScreen->DestroyPixmap)(pScreen->devPrivate);
+		fbDestroyPixmap (pScreen->devPrivate);
+		armsoc_bo_unreference(pARMSOC->scanout);
 		pScreen->devPrivate = NULL;
 	}
 
