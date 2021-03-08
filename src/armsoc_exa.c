@@ -88,10 +88,12 @@ ARMSOCCreatePixmap2(ScreenPtr pScreen, int width, int height,
 	if (!priv)
 		return NULL;
 
-	if (usage_hint & ARMSOC_CREATE_PIXMAP_SCANOUT)
-		buf_type = ARMSOC_BO_SCANOUT;
+	if (!(usage_hint & ARMSOC_CREATE_PIXMAP_IMPORT) && 
+		(width > 0 && height > 0 && depth > 0 && bitsPerPixel > 0)) {
 
-	if (width > 0 && height > 0 && depth > 0 && bitsPerPixel > 0) {
+		if (usage_hint & ARMSOC_CREATE_PIXMAP_SCANOUT)
+			buf_type = ARMSOC_BO_SCANOUT;
+
 		/* Pixmap creates and takes a ref on its bo */
 		priv->bo = armsoc_bo_new_with_dim(pARMSOC->dev,
 				width,
@@ -229,6 +231,13 @@ ARMSOCModifyPixmapHeader(PixmapPtr pPixmap, int width, int height,
 	if (armsoc_bo_width(priv->bo) != pPixmap->drawable.width ||
 	    armsoc_bo_height(priv->bo) != pPixmap->drawable.height ||
 	    armsoc_bo_bpp(priv->bo) != pPixmap->drawable.bitsPerPixel) {
+		if (armsoc_bo_imported(priv->bo)) {
+			ERROR_MSG("failed to resize %dx%d%d imported bo",
+					pPixmap->drawable.width,
+					pPixmap->drawable.height,
+					pPixmap->drawable.bitsPerPixel);
+			return FALSE;
+		}
 		/* pixmap drops ref on its old bo */
 		armsoc_bo_unreference(priv->bo);
 		/* pixmap creates new bo and takes ref on it */
@@ -261,7 +270,6 @@ ARMSOCModifyPixmapHeader(PixmapPtr pPixmap, int width, int height,
 		}
 		pPixmap->devKind = armsoc_bo_pitch(priv->bo);
 	}
-
 	return TRUE;
 }
 

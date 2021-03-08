@@ -74,6 +74,11 @@ struct armsoc_bo *armsoc_bo_new_with_dim(struct armsoc_device *dev,
 			uint32_t width,
 			uint32_t height, uint8_t depth, uint8_t bpp,
 			enum armsoc_buf_type buf_type);
+struct armsoc_bo *armsoc_bo_import_with_dim(struct armsoc_device *dev, int fd,
+			uint32_t width,
+			uint32_t height, uint32_t stride, uint8_t depth, uint8_t bpp);
+int  armsoc_bo_export(struct armsoc_bo *bo);
+int	 armsoc_bo_imported(struct armsoc_bo *bo);
 uint32_t armsoc_bo_width(struct armsoc_bo *bo);
 uint32_t armsoc_bo_height(struct armsoc_bo *bo);
 uint8_t armsoc_bo_depth(struct armsoc_bo *bo);
