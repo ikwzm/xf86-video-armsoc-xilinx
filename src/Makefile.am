@@ -48,6 +48,7 @@ armsoc_drv_la_SOURCES = \
          armsoc_exa.c \
          armsoc_exa_null.c \
          armsoc_dri2.c \
+         armsoc_dri3.c \
          armsoc_driver.c \
          armsoc_dumb.c \
          $(DRMMODE_SRCS)

@@ -102,6 +102,7 @@ _X_EXPORT DriverRec XLNX = {
 /** Supported options, as enum values. */
 enum {
 	OPTION_DEBUG,
+	OPTION_DRI_LEVEL,
 	OPTION_NO_FLIP,
 	OPTION_CARD_NUM,
 	OPTION_BUSID,
@@ -114,6 +115,7 @@ enum {
 /** Supported options. */
 static const OptionInfoRec ARMSOCOptions[] = {
 	{ OPTION_DEBUG,      "Debug",      OPTV_BOOLEAN, {0}, FALSE },
+	{ OPTION_DRI_LEVEL,  "DRI",        OPTV_INTEGER, {0}, FALSE },
 	{ OPTION_NO_FLIP,    "NoFlip",     OPTV_BOOLEAN, {0}, FALSE },
 	{ OPTION_CARD_NUM,   "DRICard",    OPTV_INTEGER, {0}, FALSE },
 	{ OPTION_BUSID,      "BusID",      OPTV_STRING,  {0}, FALSE },
@@ -771,6 +773,7 @@ ARMSOCPreInit(ScrnInfoPtr pScrn, int flags)
 	rgb defaultMask = { 0, 0, 0 };
 	Gamma defaultGamma = { 0.0, 0.0, 0.0 };
 	int driNumBufs;
+	int driLevel;
 
 	TRACE_ENTER();
 
@@ -932,11 +935,43 @@ ARMSOCPreInit(ScrnInfoPtr pScrn, int flags)
 	}
 
 	/* Load external sub-modules now: */
-	if (!(xf86LoadSubModule(pScrn, "dri2") &&
-			xf86LoadSubModule(pScrn, "exa") &&
-			xf86LoadSubModule(pScrn, "fb"))) {
+	if (!(xf86LoadSubModule(pScrn, "exa") &&
+		  xf86LoadSubModule(pScrn, "fb"))) {
 		goto fail2;
 	}
+
+	/* Load dri2 and dri3 sub-modules */
+	if (!xf86GetOptValInteger(pARMSOC->pOptionInfo, OPTION_DRI_LEVEL, &driLevel)) {
+		driLevel = 2;
+	}
+	pARMSOC->dri3_available = FALSE;
+	pARMSOC->dri3_override  = FALSE;
+	pARMSOC->dri3_enable    = FALSE;
+	pARMSOC->dri3           = FALSE;
+	pARMSOC->dri2_available = FALSE;
+	pARMSOC->dri2_enable    = FALSE;
+	pARMSOC->dri2           = FALSE;
+
+	pARMSOC->dri3_available = !!xf86LoadSubModule(pScrn, "dri3");
+	if (pARMSOC->dri3_available)
+		INFO_MSG("LoadModule: dri3 success");
+	else
+		WARNING_MSG("LoadModule: dri3 error");
+	pARMSOC->dri3_override  =
+		!pARMSOC->dri3_available ||
+		xf86IsOptionSet(pARMSOC->pOptionInfo, OPTION_DRI_LEVEL);
+
+	if (driLevel >= 3)
+		pARMSOC->dri3_enable = pARMSOC->dri3_available;
+
+	pARMSOC->dri2_available = !!xf86LoadSubModule(pScrn, "dri2");
+	if (pARMSOC->dri2_available)
+		INFO_MSG("LoadModule: dri2 success");
+	else
+		WARNING_MSG("LoadModule: dri2 error");
+	if (driLevel >= 2)
+		pARMSOC->dri2_enable = pARMSOC->dri2_available;
+
 
 	TRACE_EXIT();
 	return TRUE;
@@ -953,22 +988,37 @@ fail:
 
 
 /**
- * Initialize EXA and DRI2
+ * Initialize EXA and DRI2 and DRI3
  */
 static void
 ARMSOCAccelInit(ScreenPtr pScreen)
 {
 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
 	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
+	char str[128] = "";
 
 	if (!pARMSOC->pARMSOCEXA)
 		pARMSOC->pARMSOCEXA = InitNullEXA(pScreen, pScrn,
 								pARMSOC->drmFD);
+	if (!pARMSOC->pARMSOCEXA)
+		return;
+	
+	if (pARMSOC->dri2_enable)
+		pARMSOC->dri2 = ARMSOCDRI2ScreenInit(pScreen);
 
-	if (pARMSOC->pARMSOCEXA)
-		pARMSOC->dri = ARMSOCDRI2ScreenInit(pScreen);
+	if (pARMSOC->dri2)
+		strcat(str, "DRI2 ");
+	
+	if (pARMSOC->dri3_enable || (!pARMSOC->dri2 && !pARMSOC->dri3_override))
+		pARMSOC->dri3 = ARMSOCDRI3ScreenInit(pScreen);
+
+	if (pARMSOC->dri3)
+		strcat(str, "DRI3 ");
+
+	if (*str)
+		INFO_MSG("direct rendering: %senabled", str);
 	else
-		pARMSOC->dri = FALSE;
+		INFO_MSG("direct rendering: disabled");
 }
 
 /**
@@ -1190,12 +1240,20 @@ fail6:
 	drmmode_cursor_fini(pScreen);
 
 fail5:
-	if (pARMSOC->dri)
-		ARMSOCDRI2CloseScreen(pScreen);
+	if (pARMSOC->dri3) {
+		pARMSOC->dri3 = FALSE;
+	}
 
-	if (pARMSOC->pARMSOCEXA)
+	if (pARMSOC->dri2) {
+		ARMSOCDRI2CloseScreen(pScreen);
+		pARMSOC->dri2 = FALSE;
+	}
+
+	if (pARMSOC->pARMSOCEXA) {
 		if (pARMSOC->pARMSOCEXA->CloseScreen)
 			pARMSOC->pARMSOCEXA->CloseScreen(CLOSE_SCREEN_ARGS);
+		pARMSOC->pARMSOCEXA = FALSE;
+	}
 fail4:
 	/* Call the CloseScreen functions for fbInitScreen,  miDCInitialize,
 	 * exaDriverInit & xf86CrtcScreenInit as appropriate via their
@@ -1270,12 +1328,19 @@ ARMSOCCloseScreen(CLOSE_SCREEN_ARGS_DECL)
 
 	ret = (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 
-	if (pARMSOC->dri)
-		ARMSOCDRI2CloseScreen(pScreen);
+	if (pARMSOC->dri3)
+		pARMSOC->dri3 = FALSE;
 
-	if (pARMSOC->pARMSOCEXA)
+	if (pARMSOC->dri2) {
+		ARMSOCDRI2CloseScreen(pScreen);
+		pARMSOC->dri2 = FALSE;
+	}
+
+	if (pARMSOC->pARMSOCEXA) {
 		if (pARMSOC->pARMSOCEXA->CloseScreen)
 			pARMSOC->pARMSOCEXA->CloseScreen(CLOSE_SCREEN_ARGS);
+		pARMSOC->pARMSOCEXA = FALSE;
+	}
 
 	assert(pARMSOC->scanout);
 	/* Screen drops its ref on the scanout buffer */

@@ -128,8 +128,21 @@ struct ARMSOCRec {
 	 */
 	struct ARMSOCEXARec	*pARMSOCEXA;
 
+	/** record if success xf86LoadSubModule("dri2")  */
+	Bool				dri2_available;
+	/** record if DRI >= 2 and success xf86LoadSubModule("dri2") */
+	Bool				dri2_enable;
 	/** record if ARMSOCDRI2ScreenInit() was successful */
-	Bool				dri;
+	Bool				dri2;
+
+	/** record if success xf86LoadSubModule("dri3")  */
+	Bool				dri3_available;
+	Bool				dri3_override;
+	/** record if DRI >= 3 and success xf86LoadSubModule("dri3")  */
+	Bool				dri3_enable;
+
+	/** record if ARMSOCDRI3ScreenInit() was successful */
+	Bool				dri3;
 
 	/** user-configurable option: */
 	Bool				NoFlip;
@@ -245,5 +258,10 @@ void ARMSOCDRI2VBlankHandler(unsigned int sequence, unsigned int tv_sec, unsigne
  * DRI2 util functions..
  */
 void set_scanout_bo(ScrnInfoPtr pScrn, struct armsoc_bo *bo);
+
+/**
+ * DRI3 functions..
+ */
+Bool ARMSOCDRI3ScreenInit(ScreenPtr pScreen);
 
 #endif /* __ARMSOC_DRV_H__ */
