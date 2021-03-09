@@ -1,8 +1,8 @@
-xf86-video-armsoc-xilinx (1.5-rc1) unstable; urgency=low
+xf86-video-armsoc-xilinx (1.5-alpha1) unstable; urgency=low
 
   * add DRI3 support(under development)
 
- -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Wed, 24 Feb 2021 14:30:00 +0900
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Tue, 9 Mar 2021 12:14:00 +0900
 
 xf86-video-armsoc-xilinx (1.4-3) unstable; urgency=low
 
