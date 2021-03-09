@@ -951,6 +951,7 @@ ARMSOCPreInit(ScrnInfoPtr pScrn, int flags)
 	pARMSOC->dri2_available = FALSE;
 	pARMSOC->dri2_enable    = FALSE;
 	pARMSOC->dri2           = FALSE;
+	pARMSOC->dri2DriverName = pARMSOC->drmmode_interface->driver_name;
 
 	pARMSOC->dri3_available = !!xf86LoadSubModule(pScrn, "dri3");
 	if (pARMSOC->dri3_available)

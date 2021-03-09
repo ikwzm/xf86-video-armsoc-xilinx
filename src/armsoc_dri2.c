@@ -1094,7 +1094,7 @@ ARMSOCDRI2ScreenInit(ScreenPtr pScreen)
 		.version           = 5,
 #endif
 		.fd                = pARMSOC->drmFD,
-		.driverName        = "armsoc",
+		.driverName        = pARMSOC->dri2DriverName,
 		.deviceName        = pARMSOC->deviceName,
 		.CreateBuffer      = ARMSOCDRI2CreateBuffer,
 		.DestroyBuffer     = ARMSOCDRI2DestroyBuffer,

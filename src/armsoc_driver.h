@@ -134,6 +134,7 @@ struct ARMSOCRec {
 	Bool				dri2_enable;
 	/** record if ARMSOCDRI2ScreenInit() was successful */
 	Bool				dri2;
+	const char  		*dri2DriverName;
 
 	/** record if success xf86LoadSubModule("dri3")  */
 	Bool				dri3_available;
