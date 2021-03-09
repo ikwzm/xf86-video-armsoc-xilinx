@@ -62,6 +62,7 @@ struct armsoc_bo {
 	uint32_t pitch;
 	int refcnt;
 	int dmabuf;
+	int import;
 	/* initial size of backing memory. Used on resize to
 	 * check if the new size will fit
 	 */
@@ -97,7 +98,7 @@ void armsoc_device_del(struct armsoc_device *dev)
 int armsoc_bo_set_dmabuf(struct armsoc_bo *bo)
 {
 	int res;
-	struct drm_prime_handle prime_handle;
+	struct drm_prime_handle prime_handle = { 0 };
 
 	assert(bo->refcnt > 0);
 	assert(!armsoc_bo_has_dmabuf(bo));
@@ -148,11 +149,11 @@ struct armsoc_bo *armsoc_bo_new_with_dim(struct armsoc_device *dev,
 	create_gem.bpp = bpp;
 	res = dev->create_custom_gem(dev->fd, &create_gem);
 	if (res) {
-		free(new_buf);
 		xf86DrvMsg(-1, X_ERROR,
 			"_CREATE_GEM({height: %d, width: %d, bpp: %d buf_type: 0x%X}) failed. errno: %d - %s\n",
 				height, width, bpp, buf_type,
 				errno, strerror(errno));
+		free(new_buf);
 		return NULL;
 	}
 
@@ -170,14 +171,77 @@ struct armsoc_bo *armsoc_bo_new_with_dim(struct armsoc_device *dev,
 	new_buf->refcnt = 1;
 	new_buf->dmabuf = -1;
 	new_buf->name = 0;
+	new_buf->import = 0;
 
 	return new_buf;
+}
+
+struct armsoc_bo *armsoc_bo_import_with_dim(struct armsoc_device *dev, int fd,
+			uint32_t width, uint32_t height, uint32_t stride, uint8_t depth,
+			uint8_t bpp)
+{
+#ifdef DRM_IOCTL_PRIME_FD_TO_HANDLE
+	struct drm_prime_handle import_handle = { 0 };
+	struct armsoc_bo *new_bo;
+	off_t seek;
+	int res;
+
+	new_bo = malloc(sizeof(*new_bo));
+	if (!new_bo)
+		return NULL;
+
+	import_handle.fd    = fd;
+	import_handle.flags = 0;
+	
+	res  = drmIoctl(dev->fd, DRM_IOCTL_PRIME_FD_TO_HANDLE, &import_handle);
+	if (res) {
+		xf86DrvMsg(-1, X_ERROR,
+			" %s: DRM_IOCTL_PRIME_FD_TO_HANDLE({fd: %d}) failed. errno: %d - %s\n",
+			__func__, import_handle.fd, errno, strerror(errno));
+		free(new_bo);
+		return NULL;
+	}
+	new_bo->dev      = dev;
+	new_bo->handle   = import_handle.handle;
+	new_bo->size     = stride * height;
+	new_bo->map_addr = NULL;
+	new_bo->fb_id    = 0;
+	new_bo->pitch    = stride;
+	new_bo->width    = width;
+	new_bo->height   = height;
+	new_bo->depth    = depth;
+	new_bo->bpp      = bpp;
+	new_bo->refcnt   = 1;
+	new_bo->dmabuf   = -1;
+	new_bo->name     = 0;
+	new_bo->import   = 1;
+
+	seek = lseek(import_handle.fd, 0, SEEK_END);
+	if (seek < 0) {
+		xf86DrvMsg(-1, X_ERROR,
+			" %s: lseek({fd: %d}) failed. errno: %d - %s\n", 
+			__func__, import_handle.fd, errno, strerror(errno));
+		armsoc_bo_unreference(new_bo);
+		return NULL;
+	} else if (new_bo->size > seek) {
+		xf86DrvMsg(-1, X_ERROR,
+			" %s: requerd size(%d) is lager than actual (%ld)\n",
+			__func__, new_bo->size, (long)seek);
+		armsoc_bo_unreference(new_bo);
+		return NULL;
+	} else {
+		new_bo->original_size = seek;
+		return new_bo;
+	}
+#else
+	return NULL;
+#endif
 }
 
 static void armsoc_bo_del(struct armsoc_bo *bo)
 {
 	int res;
-	struct drm_mode_destroy_dumb destroy_dumb;
+	struct drm_mode_destroy_dumb destroy_dumb = { 0 };
 
 	if (!bo)
 		return;
@@ -201,10 +265,32 @@ static void armsoc_bo_del(struct armsoc_bo *bo)
 	destroy_dumb.handle = bo->handle;
 	res = drmIoctl(bo->dev->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
 	if (res)
-		xf86DrvMsg(-1, X_ERROR, "destroy dumb failed %d : %s\n",
-			res, strerror(errno));
-
+		xf86DrvMsg(-1, X_ERROR,
+			"DRM_IOCTL_MODE_DESTROY_DUMB(handle:0x%X) failed. errno %d : %s\n",
+			   destroy_dumb.handle, errno, strerror(errno));
 	free(bo);
+}
+
+int  armsoc_bo_export(struct armsoc_bo *bo)
+{
+#if defined(DRM_IOCTL_PRIME_HANDLE_TO_FD) && defined(O_CLOEXEC)
+	int res;
+	struct drm_prime_handle export_handle = { 0 };
+
+	export_handle.handle = bo->handle;
+	export_handle.flags  = O_CLOEXEC;
+
+	res = drmIoctl(bo->dev->fd, DRM_IOCTL_PRIME_HANDLE_TO_FD, &export_handle);
+	if (res) {
+		xf86DrvMsg(-1, X_ERROR,
+			"DRM_IOCTL_PRIME_HANDLE_TO_FD(handle:0x%X) failed. errno: %d - %s\n",
+				export_handle.handle, errno, strerror(errno));
+		return -1;
+	}
+	return export_handle.fd;
+#else
+	return -1;
+#endif
 }
 
 void armsoc_bo_unreference(struct armsoc_bo *bo)
@@ -227,7 +313,7 @@ int armsoc_bo_get_name(struct armsoc_bo *bo, uint32_t *name)
 {
 	if (bo->name == 0) {
 		int ret;
-		struct drm_gem_flink flink;
+		struct drm_gem_flink flink = { 0 };
 
 		assert(bo->refcnt > 0);
 		flink.handle = bo->handle;
@@ -235,8 +321,8 @@ int armsoc_bo_get_name(struct armsoc_bo *bo, uint32_t *name)
 		ret = drmIoctl(bo->dev->fd, DRM_IOCTL_GEM_FLINK, &flink);
 		if (ret) {
 			xf86DrvMsg(-1, X_ERROR,
-					"_GEM_FLINK(handle:0x%X)failed. errno:0x%X\n",
-					flink.handle, errno);
+				" %s: DRM_IOCTL_GEM_FLINK(handle:0x%X) failed. errno: %d - %s\n",
+				__func__, flink.handle, errno, strerror(errno));
 			return ret;
 		}
 
@@ -290,11 +376,16 @@ uint32_t armsoc_bo_pitch(struct armsoc_bo *bo)
 	return bo->pitch;
 }
 
+int armsoc_bo_imported(struct armsoc_bo *bo)
+{
+	return bo->import;
+}
+
 void *armsoc_bo_map(struct armsoc_bo *bo)
 {
 	assert(bo->refcnt > 0);
 	if (!bo->map_addr) {
-		struct drm_mode_map_dumb map_dumb;
+		struct drm_mode_map_dumb map_dumb = { 0 };
 		int res;
 
 		map_dumb.handle = bo->handle;

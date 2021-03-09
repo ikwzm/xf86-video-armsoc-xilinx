@@ -108,7 +108,7 @@ struct ARMSOCPixmapPrivRec {
 
 
 #define ARMSOC_CREATE_PIXMAP_SCANOUT 0x80000000
-
+#define ARMSOC_CREATE_PIXMAP_IMPORT  0x40000000
 
 void *ARMSOCCreatePixmap2(ScreenPtr pScreen, int width, int height,
 		int depth, int usage_hint, int bitsPerPixel,
