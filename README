@@ -30,14 +30,14 @@ shell$ sudo debian/rules binary
 
 ```console
 shell$ cd ..
-shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-alpha1_arm64.deb
+shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb
  new Debian package, version 2.0.
- size 35664 bytes: control archive=808 bytes.
+ size 35728 bytes: control archive=808 bytes.
      507 bytes,    12 lines      control
      520 bytes,     6 lines      md5sums
  Package: xserver-xorg-video-armsoc-xilinx
  Source: xf86-video-armsoc-xilinx
- Version: 1.5-alpha1
+ Version: 1.5-alpha2
  Architecture: arm64
  Maintainer: ikwzm <ichiro_k@ca2.so-net.ne.jp>
  Installed-Size: 103
@@ -52,12 +52,11 @@ Install Debian Package
 ----------------------
 
 ```console
-shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-alpha1_arm64.deb
-[sudo] password for fpga:
+shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb
 (Reading database ... 188970 files and directories currently installed.)
-Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-alpha1_arm64.deb ...
-Unpacking xserver-xorg-video-armsoc-xilinx (1.5-alpha1) over (1.5-alpha1) ...
-Setting up xserver-xorg-video-armsoc-xilinx (1.5-alpha1) ...
+Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb ...
+Unpacking xserver-xorg-video-armsoc-xilinx (1.5-alpha2) over (1.5-alpha1) ...
+Setting up xserver-xorg-video-armsoc-xilinx (1.5-alpha2) ...
 Processing triggers for man-db (2.9.1-1) ...
 ```
 
