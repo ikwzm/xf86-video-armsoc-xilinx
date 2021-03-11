@@ -1,11 +1,11 @@
 /*
  * Xilinx X11 ARMSOC driver
  *
- * Author: Hyun Woo Kwon <hyun.kwon@xilinx.com>
+ * Author: Ichiro Kawazome<ichiro_k@ca2.so-net.ne.jp>
  *
- * Copyright (C) 2014 Xilinx, Inc.
+ * Copyright (C) 2021 Ichiro Kawazome
  *
- * Based on drmmode_exynos.c
+ * Based on drmmode_xilinx.c
  *
  * Copyright © 2013 ARM Limited.
  *
@@ -37,6 +37,9 @@
 
 #include "../drmmode_driver.h"
 
+#define DIV_ROUND_UP(val,d)	(((val) + (d    ) - 1) / (d))
+#define ALIGN(val, align)	(((val) + (align) - 1) & ~((align) - 1))
+
 static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 {
 	struct drm_mode_create_dumb arg;
@@ -44,19 +47,22 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 
 	memset(&arg, 0, sizeof(arg));
 	arg.height = create_gem->height;
-	arg.width = create_gem->width;
-	arg.bpp = create_gem->bpp;
+	arg.width  = create_gem->width;
+	arg.bpp    = create_gem->bpp;
+
+	/* For Xilinx DPDMA needs pitch 256 bytes alignement */
+	arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), 256);
 
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
 	if (ret)
 		return ret;
 
 	create_gem->height = arg.height;
-	create_gem->width = arg.width;
-	create_gem->bpp = arg.bpp;
+	create_gem->width  = arg.width;
+	create_gem->bpp    = arg.bpp;
 	create_gem->handle = arg.handle;
-	create_gem->pitch = arg.pitch;
-	create_gem->size = arg.size;
+	create_gem->pitch  = arg.pitch;
+	create_gem->size   = arg.size;
 
 	return 0;
 }
