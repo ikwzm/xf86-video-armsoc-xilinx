@@ -1,3 +1,10 @@
+xf86-video-armsoc-xilinx (1.5-alpha3) unstable; urgency=low
+
+  * change create_custom_gem() in drmmode_xilinx.c so that the required pitch is the 256byte alignment required by Xilinx DPDMA
+  * fix an issue where armsoc_dri3_pixmap_from_fd() would fail
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Thu, 11 Mar 2021 23:00:00 +0900
+
 xf86-video-armsoc-xilinx (1.5-alpha2) unstable; urgency=low
 
   * change the DRI2 driver name from "armsoc" to the DRM device driver name(eg "xlnx")
