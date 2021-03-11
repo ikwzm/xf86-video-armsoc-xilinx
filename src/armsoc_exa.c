@@ -227,6 +227,9 @@ ARMSOCModifyPixmapHeader(PixmapPtr pPixmap, int width, int height,
 	if (!pPixmap->drawable.width || !pPixmap->drawable.height)
 		return TRUE;
 
+	if (priv->usage_hint & ARMSOC_CREATE_PIXMAP_IMPORT)
+		return TRUE;
+
 	assert(priv->bo);
 	if (armsoc_bo_width(priv->bo) != pPixmap->drawable.width ||
 	    armsoc_bo_height(priv->bo) != pPixmap->drawable.height ||

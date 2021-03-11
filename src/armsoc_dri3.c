@@ -100,7 +100,7 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 		goto failed;
 	}
 
-	if (pScreen->ModifyPixmapHeader(pixmap, 0, 0, 0, 0, stride, NULL)) {
+	if (!pScreen->ModifyPixmapHeader(pixmap, 0, 0, 0, 0, stride, NULL)) {
 		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) ModifyPixmapHeader(pixmap=%p,stride=%d) failed",
 				  __func__, fd, width, height, stride, depth, bpp, pixmap, stride);
 		goto failed;
