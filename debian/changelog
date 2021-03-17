@@ -1,3 +1,10 @@
+xf86-video-armsoc-xilinx (1.5-alpha4) unstable; urgency=low
+
+  * change to success only when bo has not been generated yet when ARMSOC_CREATE_PIXMAP_IMPORT is set in user_hint  in ARMSOCModifyPixmapHeader()
+  * add DEBUG_MSG to armsoc_dri3_pixmap_from_fd()
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Thu, 17 Mar 2021 9:30:00 +0900
+
 xf86-video-armsoc-xilinx (1.5-alpha3) unstable; urgency=low
 
   * change create_custom_gem() in drmmode_xilinx.c so that the required pitch is the 256byte alignment required by Xilinx DPDMA
