@@ -62,7 +62,7 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 	ScrnInfoPtr       pScrn   = xf86ScreenToScrn(pScreen);
 	struct ARMSOCRec* pARMSOC = ARMSOCPTR(pScrn);
 	PixmapPtr         pixmap  = NULL;
-    struct ARMSOCPixmapPrivRec* priv;
+	struct ARMSOCPixmapPrivRec* priv;
 
 	if (depth < 8) {
 		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) depth < 8 failed",
@@ -106,6 +106,8 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 		goto failed;
 	}
 
+	DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) success Pixmap(%p)",
+			  __func__, fd, width, height, stride, depth, bpp, pixmap);
 	return pixmap;
 	
  failed:
@@ -145,7 +147,7 @@ armsoc_dri3_fd_from_pixmap(ScreenPtr pScreen,
 
 	*stride = armsoc_bo_pitch(bo);
 	*size   = armsoc_bo_size(bo);
-	DEBUG_MSG("%s(pixmap=%p,*stride=%d,*size=%d) success", __func__, pixmap, *stride, *size);
+	DEBUG_MSG("%s(pixmap=%p,*stride=%d,*size=%d) success Fd(%d)", __func__, pixmap, *stride, *size, fd);
 	return fd;
 
   failed:
