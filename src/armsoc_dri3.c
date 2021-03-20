@@ -23,31 +23,44 @@ armsoc_dri3_open(ScreenPtr pScreen, RRProviderPtr provider, int* out)
 	int               fd;
 	drm_magic_t       magic;
 
-	if (!pARMSOC->deviceName)
-		return BadAlloc;
+	if (!pARMSOC->deviceName) {
+		DEBUG_MSG("%s() pARMSOC->deviceName failed", __func__);
+		goto badalloc;
+	}
 
 	fd = open(pARMSOC->deviceName, O_RDWR | O_CLOEXEC);
 
-	if (fd < 0)
-		return BadAlloc;
+	if (fd < 0) {
+		DEBUG_MSG("%s() open(%s) failed", __func__, pARMSOC->deviceName);
+		goto badalloc;
+	}
 
 	if (drmGetMagic(fd, &magic) < 0) {
 		if (errno == EACCES) {
-			*out = fd;
-			return Success;
+			goto success;
 		} else {
-			close(fd);
-			return BadMatch;
+			DEBUG_MSG("%s() drmGetMagic(%s) failed", __func__, pARMSOC->deviceName);
+			goto badmatch;
 		}
 	}
+	DEBUG_MSG("%s() drmGetMagic(%s) magic=%d", __func__, pARMSOC->deviceName, magic);
 
 	if (drmAuthMagic(pARMSOC->drmFD, magic) < 0) {
-		close(fd);
-		return BadMatch;
+		DEBUG_MSG("%s() drmAuthMagic(%d,%d) failed", __func__, pARMSOC->drmFD, magic);
+		goto badmatch;
 	}
-		
+
+  success:
 	*out = fd;
+	DEBUG_MSG("%s() DRI3 Open success", __func__);
 	return Success;
+  badmatch:
+	close(fd);
+	ERROR_MSG("DRI3 Open failed error=BadMatch");
+	return BadMatch;
+  badalloc:
+	ERROR_MSG("DRI3 Open failed error=BadAlloc");
+	return BadAlloc;
 }	
 
 static PixmapPtr
