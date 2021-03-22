@@ -44,14 +44,14 @@ armsoc_dri3_open(ScreenPtr pScreen, RRProviderPtr provider, int* out)
 	drm_magic_t       magic;
 
 	if (!pARMSOC->deviceName) {
-		DEBUG_MSG("%s() pARMSOC->deviceName failed", __func__);
+		DEBUG_MSG("pARMSOC->deviceName failed");
 		goto badalloc;
 	}
 
 	fd = open(pARMSOC->deviceName, O_RDWR | O_CLOEXEC);
 
 	if (fd < 0) {
-		DEBUG_MSG("%s() open(%s) failed", __func__, pARMSOC->deviceName);
+		DEBUG_MSG("open(%s) failed", pARMSOC->deviceName);
 		goto badalloc;
 	}
 
@@ -59,20 +59,20 @@ armsoc_dri3_open(ScreenPtr pScreen, RRProviderPtr provider, int* out)
 		if (errno == EACCES) {
 			goto success;
 		} else {
-			DEBUG_MSG("%s() drmGetMagic(%s) failed", __func__, pARMSOC->deviceName);
+			DEBUG_MSG("drmGetMagic(%s) failed", pARMSOC->deviceName);
 			goto badmatch;
 		}
 	}
-	DEBUG_MSG("%s() drmGetMagic(%s) magic=%d", __func__, pARMSOC->deviceName, magic);
+	DEBUG_MSG("drmGetMagic(%s) magic=%d", pARMSOC->deviceName, magic);
 
 	if (drmAuthMagic(pARMSOC->drmFD, magic) < 0) {
-		DEBUG_MSG("%s() drmAuthMagic(%d,%d) failed", __func__, pARMSOC->drmFD, magic);
+		DEBUG_MSG("drmAuthMagic(%d,%d) failed", pARMSOC->drmFD, magic);
 		goto badmatch;
 	}
 
   success:
 	*out = fd;
-	DEBUG_MSG("%s() DRI3 Open success", __func__);
+	DEBUG_MSG("DRI3 Open success");
 	return Success;
   badmatch:
 	close(fd);
@@ -98,8 +98,8 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 	struct ARMSOCPixmapPrivRec* priv;
 
 	if (depth < 8) {
-		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) depth < 8 failed",
-				  __func__, fd, width, height, stride, depth, bpp);
+		DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) depth < 8 failed",
+				  fd, width, height, stride, depth, bpp);
 		goto failed;
 	}
 
@@ -109,15 +109,15 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 	case 32:
 		break;
 	default:
-		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) bpp failed",
-				  __func__, fd, width, height, stride, depth, bpp);
+		DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) bpp failed",
+				  fd, width, height, stride, depth, bpp);
 		goto failed;
 	}
 
 	pixmap = pScreen->CreatePixmap(pScreen, width, height, depth, ARMSOC_CREATE_PIXMAP_IMPORT);
 	if (!pixmap) {
-		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) CreatePixmap() failed",
-				  __func__, fd, width, height, stride, depth, bpp);
+		DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) CreatePixmap() failed",
+				  fd, width, height, stride, depth, bpp);
 		goto failed;
 	}
 
@@ -128,19 +128,19 @@ armsoc_dri3_pixmap_from_fd(ScreenPtr pScreen,
 
 	priv->bo = armsoc_bo_import_with_dim(pARMSOC->dev, fd, width, height, stride, depth, bpp);
 	if (!priv->bo) {
-		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) armsoc_bo_import_with_dim() failed",
-				  __func__, fd, width, height, stride, depth, bpp);
+		DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) armsoc_bo_import_with_dim() failed",
+				  fd, width, height, stride, depth, bpp);
 		goto failed;
 	}
 
 	if (!pScreen->ModifyPixmapHeader(pixmap, 0, 0, 0, 0, stride, NULL)) {
-		DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) ModifyPixmapHeader(pixmap=%p,stride=%d) failed",
-				  __func__, fd, width, height, stride, depth, bpp, pixmap, stride);
+		DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) ModifyPixmapHeader(pixmap=%p,stride=%d) failed",
+				  fd, width, height, stride, depth, bpp, pixmap, stride);
 		goto failed;
 	}
 
-	DEBUG_MSG("%s(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) success Pixmap(%p)",
-			  __func__, fd, width, height, stride, depth, bpp, pixmap);
+	DEBUG_MSG("(fd=%d,width=%d,height=%d,stride=%d,depth=%d,bpp=%d) success Pixmap(%p)",
+			  fd, width, height, stride, depth, bpp, pixmap);
 	return pixmap;
 	
  failed:
@@ -167,20 +167,20 @@ armsoc_dri3_fd_from_pixmap(ScreenPtr pScreen,
 		exaMoveInPixmap(pixmap);
 		bo = ARMSOCPixmapBo(pixmap);
 		if (!bo) {
-			DEBUG_MSG("%s(pixmap=%p) bo==NULL failed", __func__, pixmap);
+			DEBUG_MSG("(pixmap=%p) bo==NULL failed", pixmap);
 			goto failed;
 		}
 	}
 
 	fd = armsoc_bo_export(bo);
 	if (fd < 0) {
-		DEBUG_MSG("%s(pixmap=%p) armsoc_bo_export(%p) failed", __func__, pixmap, bo);
+		DEBUG_MSG("(pixmap=%p) armsoc_bo_export(%p) failed", pixmap, bo);
 		goto failed;
 	}
 
 	*stride = armsoc_bo_pitch(bo);
 	*size   = armsoc_bo_size(bo);
-	DEBUG_MSG("%s(pixmap=%p,*stride=%d,*size=%d) success Fd(%d)", __func__, pixmap, *stride, *size, fd);
+	DEBUG_MSG("(pixmap=%p,*stride=%d,*size=%d) success Fd(%d)", pixmap, *stride, *size, fd);
 	return fd;
 
   failed:
