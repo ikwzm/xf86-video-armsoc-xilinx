@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <xorg-server.h>
 #include <xf86.h>
@@ -273,12 +274,11 @@ static void armsoc_bo_del(struct armsoc_bo *bo)
 
 int  armsoc_bo_export(struct armsoc_bo *bo)
 {
-#if defined(DRM_IOCTL_PRIME_HANDLE_TO_FD) && defined(O_CLOEXEC)
 	int res;
 	struct drm_prime_handle export_handle = { 0 };
 
 	export_handle.handle = bo->handle;
-	export_handle.flags  = O_CLOEXEC;
+	export_handle.flags  = DRM_CLOEXEC;
 
 	res = drmIoctl(bo->dev->fd, DRM_IOCTL_PRIME_HANDLE_TO_FD, &export_handle);
 	if (res) {
@@ -287,10 +287,9 @@ int  armsoc_bo_export(struct armsoc_bo *bo)
 				export_handle.handle, errno, strerror(errno));
 		return -1;
 	}
+	xf86DrvMsg(-1, X_INFO, "DRM_IOCTL_PRIME_HANDLE_TO_FD(handle:0x%X) return: %d\n",
+			   export_handle.handle, export_handle.fd);
 	return export_handle.fd;
-#else
-	return -1;
-#endif
 }
 
 void armsoc_bo_unreference(struct armsoc_bo *bo)
