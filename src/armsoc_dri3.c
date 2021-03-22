@@ -15,6 +15,26 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "misyncshm.h"
+
+static Bool
+armsoc_sync_init(ScreenPtr pScreen)
+{
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+
+	if (!xf86LoaderCheckSymbol("miSyncShmScreenInit")) {
+		WARNING_MSG("SYNC extension fences disabled because "
+					"miSyncShmScreenInit symbol unresolved\n");
+		return FALSE;
+	}
+
+	if (!miSyncShmScreenInit(pScreen)) {
+		WARNING_MSG("miSyncShmScreenInit failed\n");
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static int
 armsoc_dri3_open(ScreenPtr pScreen, RRProviderPtr provider, int* out)
 {
@@ -179,6 +199,9 @@ Bool
 ARMSOCDRI3ScreenInit(ScreenPtr pScreen)
 {
 	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+
+	if (!armsoc_sync_init(pScreen))
+		return FALSE;
 
 	if (!dri3_screen_init(pScreen, &armsoc_dri3_screen_info)) {
 		WARNING_MSG("dri3_screen_init failed\n");
