@@ -46,20 +46,25 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
-	arg.height = create_gem->height;
-	arg.width  = create_gem->width;
-	arg.bpp    = create_gem->bpp;
 
-	/* For Xilinx DPDMA needs pitch 256 bytes alignement */
-	arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), 256);
+	if (create_gem->buf_type == ARMSOC_BO_SCANOUT) {
+		arg.height = create_gem->height;
+		arg.width  = create_gem->width;
+		arg.bpp    = create_gem->bpp;
+		/* For Xilinx DPDMA needs pitch 256 bytes alignment */
+		arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), 256);
+	} else {
+		/* For Lima need height and width 16 bytes alignment */
+		arg.height = ALIGN(create_gem->height, 16);
+		arg.width  = ALIGN(create_gem->width , 16);
+		arg.bpp    = create_gem->bpp;
+		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp,8);
+	}
 
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
 	if (ret)
 		return ret;
 
-	create_gem->height = arg.height;
-	create_gem->width  = arg.width;
-	create_gem->bpp    = arg.bpp;
 	create_gem->handle = arg.handle;
 	create_gem->pitch  = arg.pitch;
 	create_gem->size   = arg.size;

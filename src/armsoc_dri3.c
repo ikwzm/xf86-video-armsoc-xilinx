@@ -180,7 +180,7 @@ armsoc_dri3_fd_from_pixmap(ScreenPtr pScreen,
 
 	*stride = armsoc_bo_pitch(bo);
 	*size   = armsoc_bo_size(bo);
-	DEBUG_MSG("(pixmap=%p,*stride=%d,*size=%d) success Fd(%d)", pixmap, *stride, *size, fd);
+	DEBUG_MSG("(pixmap=%p,width=%d,height=%d,depth=%d,bpp=%d,*stride=%d,*size=%d) success Fd(%d)", pixmap, armsoc_bo_width(bo), armsoc_bo_height(bo), armsoc_bo_depth(bo), armsoc_bo_bpp(bo), *stride, *size, fd);
 	return fd;
 
   failed:
