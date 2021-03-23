@@ -1,6 +1,7 @@
 xf86-video-armsoc-xilinx (1.5-alpha8) unstable; urgency=low
 
   * fix an issue where amsoc_bo_export() would always fail
+  * fix an issue that caused an error due to the difference in stride when exporting the buffer for Lima
 
  -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Mon, 22 Mar 2021 14:50:00 +0900
 
