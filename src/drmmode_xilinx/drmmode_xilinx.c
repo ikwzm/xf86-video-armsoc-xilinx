@@ -3,7 +3,7 @@
  *
  * Author: Ichiro Kawazome<ichiro_k@ca2.so-net.ne.jp>
  *
- * Copyright (C) 2021 Ichiro Kawazome
+ * Copyright (C) 2022 Ichiro Kawazome
  *
  * Based on drmmode_xilinx.c
  *
@@ -40,10 +40,91 @@
 #define DIV_ROUND_UP(val,d)	(((val) + (d    ) - 1) / (d))
 #define ALIGN(val, align)	(((val) + (align) - 1) & ~((align) - 1))
 
+#include "xlnx_drm.h"
+
+static int  xlnx_drmmode_initialized    = 0;
+static int  xlnx_drm_scanout_align_size = 256;
+static int  xlnx_drm_gpu_buf_align_size = 8;
+
+extern _X_EXPORT Bool armsocDebug;
+
+#define XLNX_DRM_WARNING(fmt, ...) \
+	do {	xf86Msg(X_WARNING, "WARNING: drmmode_xilinx " fmt "\n",\
+			##__VA_ARGS__); \
+	} while (0)
+
+#define XLNX_DRM_INFO(fmt, ...) \
+	do {	xf86Msg(X_INFO, "drmmode_xilinx " fmt "\n",\
+			##__VA_ARGS__);\
+	} while (0)
+
+#define XLNX_DRM_DEBUG(fmt, ...) \
+	do { if (armsocDebug) \
+		xf86Msg(X_INFO, "drmmode_xilinx " fmt "\n",\
+			##__VA_ARGS__);\
+	} while (0)
+
+static void xlnx_drmmode_init(int fd)
+{
+	int ret;
+	struct drm_xlnx_get_param get_param_arg;
+	struct drm_xlnx_set_param set_param_arg;
+		
+	memset(&get_param_arg, 0, sizeof(get_param_arg));
+	get_param_arg.param = DRM_XLNX_PARAM_DRIVER_IDENTIFIER;
+	ret = drmIoctl(fd, DRM_IOCTL_XLNX_GET_PARAM, &get_param_arg);
+	if (ret) {
+		XLNX_DRM_WARNING("drmIoctl("
+				 "DRM_IOCTL_XLNX_GET_PARAM,"
+				 "DRM_XLNX_PARAM_DRIVER_IDENTIFIER"
+				 ") failed(%d)", ret);
+		goto init_done;
+	}
+	if (get_param_arg.value != DRM_XLNX_DRIVER_IDENTIFIER) {
+		XLNX_DRM_WARNING("invalid identifier(0x%08X)\n", (int)get_param_arg.value);
+		goto init_done;
+	}
+
+	memset(&get_param_arg, 0, sizeof(get_param_arg));
+	get_param_arg.param = DRM_XLNX_PARAM_SCANOUT_ALIGNMENT_SIZE;
+	ret = drmIoctl(fd, DRM_IOCTL_XLNX_GET_PARAM, &get_param_arg);
+	if (ret) {
+		XLNX_DRM_WARNING("drmIoctl("
+				 "DRM_IOCTL_XLNX_GET_PARAM,"
+				 "DRM_XLNX_PARAM_SCANOUT_ALIGNMENT_SIZE"
+				 ") failed(%d)", ret);
+		goto init_done;
+	}
+	xlnx_drm_scanout_align_size = get_param_arg.value;
+
+	memset(&set_param_arg, 0, sizeof(set_param_arg));
+	set_param_arg.param = DRM_XLNX_PARAM_GPU_BUF_ALIGNMENT_SIZE;
+	set_param_arg.value = xlnx_drm_gpu_buf_align_size;
+	ret = drmIoctl(fd, DRM_IOCTL_XLNX_SET_PARAM, &set_param_arg);
+	if (ret) {
+		XLNX_DRM_WARNING("drmIoctl("
+				 "DRM_IOCTL_XLNX_SET_PARAM,"
+				 "DRM_XLNX_PARAM_GPU_BUF_ALIGNMENT_SIZE,"
+				 "%d"
+				 ") failed(%d)", 
+				 (int)set_param_arg.value, ret);
+		goto init_done;
+	}
+    init_done:
+	XLNX_DRM_DEBUG("scanout_align_size=%d\n", xlnx_drm_scanout_align_size);
+        XLNX_DRM_DEBUG("gpu_buf_align_size=%d\n", xlnx_drm_gpu_buf_align_size);
+	XLNX_DRM_INFO("initialized");
+}
+
 static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 {
 	struct drm_mode_create_dumb arg;
 	int ret;
+
+	if (xlnx_drmmode_initialized != 1) {
+		xlnx_drmmode_init(fd);
+		xlnx_drmmode_initialized = 1;
+	}
 
 	memset(&arg, 0, sizeof(arg));
 
@@ -51,14 +132,16 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 		arg.height = create_gem->height;
 		arg.width  = create_gem->width;
 		arg.bpp    = create_gem->bpp;
-		/* For Xilinx DPDMA needs pitch 256 bytes alignment */
-		arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), 256);
+		/* For Xilinx DPDMA needs pitch scanout alignment */
+		arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), xlnx_drm_scanout_align_size);
+		arg.flags  = DRM_XLNX_GEM_DUMB_SCANOUT;
 	} else {
 		/* For Lima need height and width 16 bytes alignment */
 		arg.height = ALIGN(create_gem->height, 16);
 		arg.width  = ALIGN(create_gem->width , 16);
 		arg.bpp    = create_gem->bpp;
-		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp,8);
+		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp, xlnx_drm_gpu_buf_align_size);
+		arg.flags  = DRM_XLNX_GEM_DUMB_NON_SCANOUT;
 	}
 
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
