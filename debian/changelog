@@ -1,3 +1,9 @@
+xf86-video-armsoc-xilinx (1.5-alpha10) unstable; urgency=low
+
+  * change create_custom_gem() in drmmode_xilinx.c to set dumb buffer alignment size with ioctl of Xilinx DRM Driver.
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Sun, 7 Aug 2022 07:40:00 +0900
+
 xf86-video-armsoc-xilinx (1.5-alpha9) unstable; urgency=low
 
   * change create_custom_gem() in drmmode_xilinx.c to set GPU buffer alignment size with ioctl of Xilinx DRM Driver.
