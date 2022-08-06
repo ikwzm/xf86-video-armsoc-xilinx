@@ -44,7 +44,7 @@
 
 static int  xlnx_drmmode_initialized    = 0;
 static int  xlnx_drm_scanout_align_size = 256;
-static int  xlnx_drm_gpu_buf_align_size = 8;
+static int  xlnx_drm_dumb_align_size    = 8;
 
 extern _X_EXPORT Bool armsocDebug;
 
@@ -98,21 +98,21 @@ static void xlnx_drmmode_init(int fd)
 	xlnx_drm_scanout_align_size = get_param_arg.value;
 
 	memset(&set_param_arg, 0, sizeof(set_param_arg));
-	set_param_arg.param = DRM_XLNX_PARAM_GPU_BUF_ALIGNMENT_SIZE;
-	set_param_arg.value = xlnx_drm_gpu_buf_align_size;
+	set_param_arg.param = DRM_XLNX_PARAM_DUMB_ALIGNMENT_SIZE;
+	set_param_arg.value = xlnx_drm_dumb_align_size;
 	ret = drmIoctl(fd, DRM_IOCTL_XLNX_SET_PARAM, &set_param_arg);
 	if (ret) {
 		XLNX_DRM_WARNING("drmIoctl("
 				 "DRM_IOCTL_XLNX_SET_PARAM,"
-				 "DRM_XLNX_PARAM_GPU_BUF_ALIGNMENT_SIZE,"
+				 "DRM_XLNX_PARAM_DUMB_ALIGNMENT_SIZE,"
 				 "%d"
 				 ") failed(%d)", 
 				 (int)set_param_arg.value, ret);
 		goto init_done;
 	}
     init_done:
-	XLNX_DRM_DEBUG("scanout_align_size=%d\n", xlnx_drm_scanout_align_size);
-        XLNX_DRM_DEBUG("gpu_buf_align_size=%d\n", xlnx_drm_gpu_buf_align_size);
+	XLNX_DRM_DEBUG("scanout  alignment size = %d\n", xlnx_drm_scanout_align_size);
+        XLNX_DRM_DEBUG("dumb buf alignment size = %d\n", xlnx_drm_dumb_align_size   );
 	XLNX_DRM_INFO("initialized");
 }
 
@@ -136,11 +136,11 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 		arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), xlnx_drm_scanout_align_size);
 		arg.flags  = DRM_XLNX_GEM_DUMB_SCANOUT;
 	} else {
-		/* For Lima need height and width 16 bytes alignment */
+		/* For Lima need height and width 16 pixel alignment */
 		arg.height = ALIGN(create_gem->height, 16);
 		arg.width  = ALIGN(create_gem->width , 16);
 		arg.bpp    = create_gem->bpp;
-		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp, xlnx_drm_gpu_buf_align_size);
+		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp, 8);
 		arg.flags  = DRM_XLNX_GEM_DUMB_NON_SCANOUT;
 	}
 
