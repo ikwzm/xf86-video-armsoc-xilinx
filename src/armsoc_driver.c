@@ -220,6 +220,7 @@ ARMSOCOpenDRMCard(void)
 	} else {
 		char filename[32];
 		int err;
+                int retry;
 		drmSetVersion sv;
 		char *bus_id, *bus_id_copy;
 
@@ -233,11 +234,17 @@ ARMSOCOpenDRMCard(void)
 		if (-1 == fd)
 			goto fail2;
 		/* Set interface version to initialise bus id */
-		sv.drm_di_major = 1;
-		sv.drm_di_minor = 1;
-		sv.drm_dd_major = -1;
-		sv.drm_dd_minor = -1;
-		err = drmSetInterfaceVersion(fd, &sv);
+		for (retry = 0; retry < 2000; retry++) {
+			EARLY_INFO_MSG("Try set DRM interface version.");
+			sv.drm_di_major = 1;
+			sv.drm_di_minor = 1;
+			sv.drm_dd_major = -1;
+			sv.drm_dd_minor = -1;
+			err = drmSetInterfaceVersion(fd, &sv);
+			if (err == 0)
+				break;
+			usleep(1000);
+		}
 		if (err) {
 			EARLY_ERROR_MSG(
 				"Cannot set the DRM interface version.");
@@ -287,6 +294,7 @@ ARMSOCOpenDRM(ScrnInfoPtr pScrn)
 {
 	struct ARMSOCRec *pARMSOC = ARMSOCPTR(pScrn);
 	drmSetVersion sv;
+	int retry;
 	int err;
 
 	if (connection.fd < 0) {
@@ -300,11 +308,17 @@ ARMSOCOpenDRM(ScrnInfoPtr pScrn)
 		 * this leaves us as master.
 		 * (see DRIOpenDRMMaster() in DRI1)
 		 */
-		sv.drm_di_major = 1;
-		sv.drm_di_minor = 1;
-		sv.drm_dd_major = -1;
-		sv.drm_dd_minor = -1;
-		err = drmSetInterfaceVersion(pARMSOC->drmFD, &sv);
+		for (retry = 0; retry < 2000; retry++) {
+			DEBUG_MSG("Try set DRM interface version.");
+			sv.drm_di_major = 1;
+			sv.drm_di_minor = 1;
+			sv.drm_dd_major = -1;
+			sv.drm_dd_minor = -1;
+			err = drmSetInterfaceVersion(pARMSOC->drmFD, &sv);
+			if (err == 0)
+				break;
+			usleep(1000);
+		}
 		if (err != 0) {
 			ERROR_MSG("Cannot set the DRM interface version.");
 			drmClose(pARMSOC->drmFD);
