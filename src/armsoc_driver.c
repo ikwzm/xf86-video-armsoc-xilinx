@@ -220,8 +220,6 @@ ARMSOCOpenDRMCard(void)
 	} else {
 		char filename[32];
 		int err;
-                int retry;
-		drmSetVersion sv;
 		char *bus_id, *bus_id_copy;
 
 		/* open with card_num */
@@ -233,23 +231,6 @@ ARMSOCOpenDRMCard(void)
 		fd = open(filename, O_RDWR, 0);
 		if (-1 == fd)
 			goto fail2;
-		/* Set interface version to initialise bus id */
-		for (retry = 0; retry < 2000; retry++) {
-			EARLY_INFO_MSG("Try set DRM interface version.");
-			sv.drm_di_major = 1;
-			sv.drm_di_minor = 1;
-			sv.drm_dd_major = -1;
-			sv.drm_dd_minor = -1;
-			err = drmSetInterfaceVersion(fd, &sv);
-			if (err == 0)
-				break;
-			usleep(1000);
-		}
-		if (err) {
-			EARLY_ERROR_MSG(
-				"Cannot set the DRM interface version.");
-			goto fail1;
-		}
 		/* get the bus id */
 		bus_id = drmGetBusid(fd);
 		if (!bus_id) {
