@@ -1,3 +1,9 @@
+xf86-video-armsoc-xilinx (1.5-alpha12) unstable; urgency=low
+
+  * test
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Sun, 7 Aug 2022 07:40:00 +0900
+
 xf86-video-armsoc-xilinx (1.5-alpha11) unstable; urgency=low
 
   * change to retry several times when checking whether it can become a drm master.
