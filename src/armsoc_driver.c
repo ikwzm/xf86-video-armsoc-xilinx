@@ -74,6 +74,16 @@ static void ARMSOCAdjustFrame(ADJUST_FRAME_ARGS_DECL);
 static Bool ARMSOCEnterVT(VT_FUNC_ARGS_DECL);
 static void ARMSOCLeaveVT(VT_FUNC_ARGS_DECL);
 static void ARMSOCFreeScreen(FREE_SCREEN_ARGS_DECL);
+static Bool ARMSOCDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr);
+#ifdef XSERVER_PLATFORM_BUS
+static Bool ARMSOCPlatformProbe(DriverPtr driver, int entity_num, int flags,
+				struct xf86_platform_device* dev,
+				intptr_t match_data)
+{
+	EARLY_INFO_MSG("ARMSOCPlatformProbe()");
+	return FALSE;
+}
+#endif
 
 /**
  * A structure used by the XFree86 code when loading this driver, so that it
@@ -89,10 +99,13 @@ _X_EXPORT DriverRec ARMSOC = {
 		ARMSOCAvailableOptions,
 		NULL,
 		0,
-		NULL,
+		ARMSOCDriverFunc,
 #ifdef XSERVER_LIBPCIACCESS
 		NULL,
-		NULL
+		NULL,
+#endif
+#ifdef XSERVER_PLATFORM_BUS
+		ARMSOCPlatformProbe,
 #endif
 };
 
@@ -169,6 +182,19 @@ ARMSOCDropDRMMaster(void)
 		connection.master_count--;
 
 	return ret;
+}
+
+static Bool
+ARMSOCDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr)
+{
+	switch (op) {
+#if XORG_VERSION_CURRENT >= XORG_VERSION_NUMERIC(1,15,99,902,0)
+	case SUPPORTS_SERVER_FDS:
+		return TRUE;
+#endif 
+	default:
+		return FALSE;
+	}
 }
 
 static void
