@@ -1,8 +1,26 @@
 xf86-video-armsoc-xilinx
 ========================
+
+Overview
+--------
+
+### Introduction
+
 Open-source X.org graphics driver for ARM graphics(with Zynq UltraScale+ MPSoC)
 
+### Note
+
 Original: https://anongit.freedesktop.org/git/xorg/driver/xf86-video-armsoc.git
+This repository is not official.
+
+### Features
+
+* Supports hardware rendering with Lima
+   - DRI3 support
+   - get scanout alignment size from Xilinx DRM Driver.
+   - set dumb buffer alignment size.
+   - set dumb buffer cache default mode
+   - set dumb buffer cache on/off.
 
 Build Debian Package
 --------------------
