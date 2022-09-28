@@ -45,6 +45,8 @@
 static int  xlnx_drmmode_initialized    = 0;
 static int  xlnx_drm_scanout_align_size = 256;
 static int  xlnx_drm_dumb_align_size    = 8;
+static int  xlnx_drm_dumb_cache_avalable= 0;
+static int  xlnx_drm_dumb_cache_default = 1;
 
 extern _X_EXPORT Bool armsocDebug;
 
@@ -93,9 +95,9 @@ static void xlnx_drmmode_init(int fd)
 				 "DRM_IOCTL_XLNX_GET_PARAM,"
 				 "DRM_XLNX_PARAM_SCANOUT_ALIGNMENT_SIZE"
 				 ") failed(%d)", ret);
-		goto init_done;
-	}
-	xlnx_drm_scanout_align_size = get_param_arg.value;
+	} else {
+        	xlnx_drm_scanout_align_size = get_param_arg.value;
+        }
 
 	memset(&set_param_arg, 0, sizeof(set_param_arg));
 	set_param_arg.param = DRM_XLNX_PARAM_DUMB_ALIGNMENT_SIZE;
@@ -108,11 +110,35 @@ static void xlnx_drmmode_init(int fd)
 				 "%d"
 				 ") failed(%d)", 
 				 (int)set_param_arg.value, ret);
-		goto init_done;
+	}
+
+	memset(&get_param_arg, 0, sizeof(get_param_arg));
+	get_param_arg.param = DRM_XLNX_PARAM_DUMB_CACHE_AVALABLE;
+	ret = drmIoctl(fd, DRM_IOCTL_XLNX_GET_PARAM, &get_param_arg);
+	if (ret) {
+		XLNX_DRM_WARNING("drmIoctl("
+				 "DRM_IOCTL_XLNX_GET_PARAM,"
+				 "DRM_XLNX_PARAM_DUMB_CACHE_AVALABLE"
+				 ") failed(%d)", ret);
+	} else {
+        	xlnx_drm_dumb_cache_avalable = get_param_arg.value;
+        }
+	memset(&get_param_arg, 0, sizeof(set_param_arg));
+	set_param_arg.param = DRM_XLNX_PARAM_DUMB_CACHE_DEFAULT_MODE;
+	set_param_arg.value = xlnx_drm_dumb_cache_default;
+	ret = drmIoctl(fd, DRM_IOCTL_XLNX_SET_PARAM, &set_param_arg);
+	if (ret) {
+		XLNX_DRM_WARNING("drmIoctl("
+				 "DRM_IOCTL_XLNX_SET_PARAM,"
+				 "DRM_XLNX_PARAM_DUMB_CACHE_DEFAULT_MODE,"
+				 "%d"
+				 ") failed(%d)", 
+				 (int)set_param_arg.value, ret);
 	}
     init_done:
-	XLNX_DRM_DEBUG("scanout  alignment size = %d\n", xlnx_drm_scanout_align_size);
-        XLNX_DRM_DEBUG("dumb buf alignment size = %d\n", xlnx_drm_dumb_align_size   );
+	XLNX_DRM_DEBUG("scanout  alignment size = %d", xlnx_drm_scanout_align_size );
+        XLNX_DRM_DEBUG("dumb buf alignment size = %d", xlnx_drm_dumb_align_size    );
+        XLNX_DRM_DEBUG("dumb buf cache avalable = %d", xlnx_drm_dumb_cache_avalable);
 	XLNX_DRM_INFO("initialized");
 }
 
@@ -135,6 +161,8 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 		/* For Xilinx DPDMA needs pitch scanout alignment */
 		arg.pitch  = ALIGN(create_gem->width * DIV_ROUND_UP(create_gem->bpp,8), xlnx_drm_scanout_align_size);
 		arg.flags  = DRM_XLNX_GEM_DUMB_SCANOUT;
+                if (xlnx_drm_dumb_cache_avalable != 0)
+			arg.flags |= DRM_XLNX_GEM_DUMB_CACHE_OFF;
 	} else {
 		/* For Lima need height and width 16 pixel alignment */
 		arg.height = ALIGN(create_gem->height, 16);
@@ -142,6 +170,8 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 		arg.bpp    = create_gem->bpp;
 		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp, 8);
 		arg.flags  = DRM_XLNX_GEM_DUMB_NON_SCANOUT;
+                if (xlnx_drm_dumb_cache_avalable != 0)
+			arg.flags |= DRM_XLNX_GEM_DUMB_CACHE_ON;
 	}
 
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
