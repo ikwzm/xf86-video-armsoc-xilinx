@@ -30,34 +30,35 @@ shell$ sudo debian/rules binary
 
 ```console
 shell$ cd ..
-shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb
+shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb
  new Debian package, version 2.0.
- size 35728 bytes: control archive=808 bytes.
-     507 bytes,    12 lines      control
-     520 bytes,     6 lines      md5sums
+ size 41668 bytes: control archive=695 bytes.
+     509 bytes,    12 lines      control              
+     520 bytes,     6 lines      md5sums              
  Package: xserver-xorg-video-armsoc-xilinx
  Source: xf86-video-armsoc-xilinx
- Version: 1.5-alpha2
+ Version: 1.5-trial-12
  Architecture: arm64
  Maintainer: ikwzm <ichiro_k@ca2.so-net.ne.jp>
- Installed-Size: 103
- Depends: libc6 (>= 2.17), libdrm2 (>= 2.4.36), libpixman-1-0, xserver-xorg-core
+ Installed-Size: 106
+ Depends: libc6 (>= 2.33), libdrm2 (>= 2.4.31), libpixman-1-0, xserver-xorg-core
  Provides: xorg-driver-video
  Section: x11
  Priority: optional
  Homepage: <https://github.com/ikwzm/xf86-video-armsoc-xilinx>
  Description: X.Org X Server -- ARM SoC display driver for rockchip, amlogic, sunxi and Xilinx(ZynqMP) DRM (mainline kernel)
 ```
+
 Install Debian Package
 ----------------------
 
 ```console
-shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb
-(Reading database ... 188970 files and directories currently installed.)
-Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-alpha2_arm64.deb ...
-Unpacking xserver-xorg-video-armsoc-xilinx (1.5-alpha2) over (1.5-alpha1) ...
-Setting up xserver-xorg-video-armsoc-xilinx (1.5-alpha2) ...
-Processing triggers for man-db (2.9.1-1) ...
+shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb 
+(Reading database ... 109140 files and directories currently installed.)
+Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb ...
+Unpacking xserver-xorg-video-armsoc-xilinx (1.5-trial-12) over (1.5-alpha12) ...
+Setting up xserver-xorg-video-armsoc-xilinx (1.5-trial-12) ...
+Processing triggers for man-db (2.10.2-1) ...
 ```
 
 Configuration xserver-xorg-video
