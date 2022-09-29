@@ -1,3 +1,9 @@
+xf86-video-armsoc-xilinx (1.5-trial-13) unstable; urgency=low
+
+  * change create_custom_gem() in drmmode_xilinx.c to set dumb buffer cache off with ioctl of Xilinx DRM Driver.
+
+ -- ikwzm <ichiro_k@ca2.so-net.ne.jp>  Tue,30 Aug 2022 14:40:00 +0900
+
 xf86-video-armsoc-xilinx (1.5-trial-12) unstable; urgency=low
 
   * change create_custom_gem() in drmmode_xilinx.c to set dumb buffer cache default mode with ioctl of Xilinx DRM Driver.
