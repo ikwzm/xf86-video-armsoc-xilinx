@@ -171,7 +171,7 @@ static int create_custom_gem(int fd, struct armsoc_create_gem *create_gem)
 		arg.pitch  = arg.width * DIV_ROUND_UP(create_gem->bpp, 8);
 		arg.flags  = DRM_XLNX_GEM_DUMB_NON_SCANOUT;
                 if (xlnx_drm_dumb_cache_avalable != 0)
-			arg.flags |= DRM_XLNX_GEM_DUMB_CACHE_ON;
+			arg.flags |= DRM_XLNX_GEM_DUMB_CACHE_OFF;
 	}
 
 	ret = drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &arg);
