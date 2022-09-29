@@ -19,8 +19,8 @@ This repository is not official.
    - DRI3 support
    - get scanout alignment size from Xilinx DRM Driver.
    - set dumb buffer alignment size.
-   - set dumb buffer cache default mode
-   - set dumb buffer cache on/off.
+   - set dumb buffer cache on by default.
+   - set dumb buffer cache off by dri.
 
 Build Debian Package
 --------------------
@@ -48,14 +48,14 @@ shell$ sudo debian/rules binary
 
 ```console
 shell$ cd ..
-shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb
+shell$ dpkg --info xserver-xorg-video-armsoc-xilinx_1.5-trial-13_arm64.deb
  new Debian package, version 2.0.
  size 41668 bytes: control archive=695 bytes.
      509 bytes,    12 lines      control              
      520 bytes,     6 lines      md5sums              
  Package: xserver-xorg-video-armsoc-xilinx
  Source: xf86-video-armsoc-xilinx
- Version: 1.5-trial-12
+ Version: 1.5-trial-13
  Architecture: arm64
  Maintainer: ikwzm <ichiro_k@ca2.so-net.ne.jp>
  Installed-Size: 106
@@ -71,11 +71,11 @@ Install Debian Package
 ----------------------
 
 ```console
-shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb 
-(Reading database ... 109140 files and directories currently installed.)
-Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-trial-12_arm64.deb ...
-Unpacking xserver-xorg-video-armsoc-xilinx (1.5-trial-12) over (1.5-alpha12) ...
-Setting up xserver-xorg-video-armsoc-xilinx (1.5-trial-12) ...
+shell$ sudo dpkg -i xserver-xorg-video-armsoc-xilinx_1.5-trial-13_arm64.deb 
+(Reading database ... 97530 files and directories currently installed.)
+Preparing to unpack xserver-xorg-video-armsoc-xilinx_1.5-trial-13_arm64.deb ...
+Unpacking xserver-xorg-video-armsoc-xilinx (1.5-trial-13) over (1.5-alpha12) ...
+Setting up xserver-xorg-video-armsoc-xilinx (1.5-trial-13) ...
 Processing triggers for man-db (2.10.2-1) ...
 ```
 
